@@ -421,7 +421,7 @@ export function buildLayout(board, { titleOverrides = {}, groupMore = "외" } = 
   }
   if (desiredTotal > STAGE_BODY_HEIGHT) {
     throw new Error(
-      `세로형 캔버스 높이 초과: ${board.title} (${desiredTotal}/${STAGE_BODY_HEIGHT})`
+      `portrait canvas height exceeded: ${board.title} (${desiredTotal}/${STAGE_BODY_HEIGHT})`
     );
   }
   const extraPerStage = (STAGE_BODY_HEIGHT - desiredTotal) / process.stages.length;
@@ -527,7 +527,7 @@ function buildEdgeLabelLayout(context) {
     );
     if (!placement) {
       throw new Error(
-        `연결 라벨 충돌을 해소할 수 없습니다: ${context.board.title}/${edge.id}`
+        `unresolvable edge-label collision: ${context.board.title}/${edge.id}`
       );
     }
     const rect = {
@@ -663,7 +663,7 @@ function validateEdgeRouteLayout(context) {
   }
   if (overlaps.length > 0) {
     throw new Error(
-      `연결선 공선 겹침: ${context.board.title}\n- ${overlaps
+      `collinear edge overlap: ${context.board.title}\n- ${overlaps
         .slice(0, 12)
         .map(
           ({ ids, length, leftPath, rightPath }) =>
