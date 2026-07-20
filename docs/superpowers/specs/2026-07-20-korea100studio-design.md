@@ -21,9 +21,10 @@ architecture diagrams."
 - Multiple visual themes (fireworks ships 12 styles; we ship one).
 - GIF export / puppeteer / any headless-browser dependency.
 - A web UI.
-- Modifying the korea100 repo or replacing its renderer. korea100's renderer
-  stays exactly as-is. Migration is a **later, separate decision** made after
-  this skill is tested. korea100 is only a *reference example*, not a dependency.
+- Modifying the korea100 repo in v1. korea100's renderer stays exactly as-is
+  until this skill is built and verified. The eventual migration is decided
+  (**soft replace**, see §12) but sequenced as a gated **Phase 2**, not part of
+  v1. In v1 korea100 is only a *reference example*, not a dependency.
 
 ## 3. Users & usage model
 
@@ -138,6 +139,13 @@ Extract and **generalize** (copy, not move — korea100 untouched):
 - `lib/process-motion.mjs` + `generate-process-motion.mjs` → `lib/motion.mjs`.
 - `sharp` PNG path → `lib/rasterize.mjs` (optional rsvg/cairosvg detection).
 
+The `lib/` modules MUST expose a stable **programmatic API** (not only the CLI),
+so a consumer like korea100 can import the core while keeping its own wrapper:
+`buildLayout(board, profile)`, `renderBoardSvg(board, { profile })` → SVG string,
+`computeComposition(board, profile)`, `buildMotionSvg(board, profile)`. This is
+what makes the Phase 2 soft replace (§12) possible without korea100 giving up
+its batch/caching/PNG pipeline.
+
 ## 9. Testing
 
 - Schema validation tests (valid/invalid boards).
@@ -158,6 +166,33 @@ Extract and **generalize** (copy, not move — korea100 untouched):
 
 ## 11. Open questions / later decisions
 
-- Whether to eventually migrate korea100 to depend on korea100studio (deferred;
-  decide after testing).
 - npm package name / scope for publish (`korea100studio` vs scoped).
+- How korea100 vendors the core in Phase 2 (npm dep vs git submodule vs vendored
+  copy) — decided at Phase 2 start.
+
+## 12. Phase 2 — soft replace of korea100's renderer (gated, later)
+
+Decided approach for the eventual migration (Method B, soft): korea100 keeps its
+own wrapper — batch loop, source-hash caching, `.process-image-manifest.json`,
+`sharp` PNG export at 1800×2400 — and swaps only the geometry + SVG-assembly core
+to import from korea100studio's programmatic API with `profile: gov`.
+
+Sequence, each step gated by verification:
+
+1. Build korea100studio v1 (this spec) and its tests, standalone.
+2. Verify the `gov` profile reproduces korea100 on all 509 boards:
+   - render every korea100 board through korea100studio (gov profile),
+   - compare against korea100's current output — composition metrics must match
+     the frozen baseline, and rendered SVG/PNG must be visually equivalent
+     (pixel-diff tolerance) on a representative set.
+3. Only if step 2 is clean: introduce a korea100 adapter
+   (institution JSON → board-v1 + gov) and replace the body of
+   `generate-process-article-image.mjs` with a call to
+   `renderBoardSvg(...)`, keeping the wrapper/caching/sharp path.
+4. Re-run korea100's full checks (`test:process-layout`, `test:process-warnings`,
+   `validate:composition`, `baseline:composition`) + regenerate 509 PNGs and
+   confirm no visual regression.
+5. Delete korea100's now-duplicated geometry/render code.
+
+Reversible at any step: until step 5, korea100's original renderer remains and
+the swap is a single call-site change.
