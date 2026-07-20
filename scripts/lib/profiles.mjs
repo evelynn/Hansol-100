@@ -11,6 +11,28 @@ const GOV = {
   refsLabel: "조문",
   accent: "#7c3aed",
   titleOverrides: {},
+  // Renderer chrome text (grid axis labels, legend, footer notes). Kept as
+  // profile data (not hardcoded in render-svg.mjs) so the gov profile can
+  // reproduce korea100's Korean UI copy while default stays English-neutral.
+  // {lanes}/{groups}/{nodes}/{edges} are template placeholders substituted
+  // by the renderer.
+  labels: {
+    stageAxis: "단계 ↓",
+    actorAxis: "행위자 묶음 →",
+    legendTitle: "읽는 법",
+    sequenceLabel: "절차 순서",
+    messageLabel: "정보 전달",
+    loopLabel: "보완 회귀",
+    statsTemplate: "노드 {nodes} · 레인 {lanes} · 게이트 {stages}",
+    groupingNoteTemplate:
+      "원래 {lanes}개 행위자 레인을 {groups}개 레이아웃 묶음으로 배치했으며, {nodes}개 업무와 {edges}개 연결 관계는 유지했습니다.",
+    readingNote: "단계는 위→아래, 행위자 묶음은 좌→우로 읽습니다.",
+    sourceNote:
+      "출처: 해당 제도의 법률·시행령·시행규칙 기반 모델 · 실제 사건의 진행 상태나 법률 자문을 의미하지 않습니다.",
+    // Intentionally blank: the korea100/대한민국 제도 100 project credit is
+    // brand-specific, not just a language choice, so it is not reproduced here.
+    creditLine: "",
+  },
 };
 
 const DEFAULT = {
@@ -24,6 +46,21 @@ const DEFAULT = {
   refsLabel: "Refs",
   accent: "#2563eb",
   titleOverrides: {},
+  labels: {
+    stageAxis: "Stage ↓",
+    actorAxis: "Actor group →",
+    legendTitle: "Legend",
+    sequenceLabel: "Sequence",
+    messageLabel: "Message",
+    loopLabel: "Loop",
+    statsTemplate: "{nodes} nodes · {lanes} lanes · {stages} stages",
+    groupingNoteTemplate:
+      "{lanes} actor lanes are arranged into {groups} layout groups; {nodes} tasks and {edges} connections are preserved.",
+    readingNote: "Stages read top to bottom; actor groups read left to right.",
+    sourceNote:
+      "Source: process model derived from the underlying rules. Not legal advice and not an indicator of any real case status.",
+    creditLine: "",
+  },
 };
 
 const PROFILES = { default: DEFAULT, gov: GOV };
