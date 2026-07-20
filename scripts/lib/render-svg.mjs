@@ -48,7 +48,7 @@ const emphasisOf = (node) => node.emphasis ?? "normal";
  */
 export function renderBoardSvg(board, { profile = "default" } = {}) {
   const p = getProfile(profile);
-  const ctx = buildLayout(board, { titleOverrides: p.titleOverrides });
+  const ctx = buildLayout(board, { titleOverrides: p.titleOverrides, groupMore: p.groupMore });
   return renderSvg(ctx, p);
 }
 

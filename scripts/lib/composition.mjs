@@ -136,9 +136,9 @@ function routeStretch(route) {
 }
 
 export function computeComposition(board, profile = "default") {
-  const titleOverrides = getProfile(profile).titleOverrides;
-  const groups = buildProcessLaneGroups(board.lanes, { titleOverrides });
-  const context = buildLayout(board, { titleOverrides });
+  const { titleOverrides, groupMore } = getProfile(profile);
+  const groups = buildProcessLaneGroups(board.lanes, { titleOverrides, groupMore });
+  const context = buildLayout(board, { titleOverrides, groupMore });
 
   const edges = board.edges;
   const routes = edges.map((edge) => edgeSegments(edge, context)).filter(Boolean);

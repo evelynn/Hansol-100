@@ -11,6 +11,9 @@ const GOV = {
   refsLabel: "조문",
   accent: "#7c3aed",
   titleOverrides: {},
+  // Connector used when a lane-group title summarizes more than 2 lanes,
+  // e.g. "신청인 외 2". See layout.mjs summarizeGroupTitle.
+  groupMore: "외",
   // Renderer chrome text (grid axis labels, legend, footer notes). Kept as
   // profile data (not hardcoded in render-svg.mjs) so the gov profile can
   // reproduce korea100's Korean UI copy while default stays English-neutral.
@@ -46,6 +49,9 @@ const DEFAULT = {
   refsLabel: "Refs",
   accent: "#2563eb",
   titleOverrides: {},
+  // Connector used when a lane-group title summarizes more than 2 lanes,
+  // e.g. "Requester +2". See layout.mjs summarizeGroupTitle.
+  groupMore: "+",
   labels: {
     stageAxis: "Stage ↓",
     actorAxis: "Actor group →",

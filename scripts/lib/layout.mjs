@@ -2,11 +2,15 @@ const EXTRA_LANE_ORDER = [2, 1, 0, 3];
 
 export function buildProcessLaneGroups(
   lanes,
-  { titleOverrides = {}, accents = ["#0f9f72", "#3b82f6", "#c78116", "#0891b2"] } = {}
+  {
+    titleOverrides = {},
+    accents = ["#0f9f72", "#3b82f6", "#c78116", "#0891b2"],
+    groupMore = "외",
+  } = {}
 ) {
   return partitionLanes(lanes).map((groupLanes, index) => ({
     id: `group-${index + 1}`,
-    title: titleOverrides[index] ?? summarizeGroupTitle(groupLanes),
+    title: titleOverrides[index] ?? summarizeGroupTitle(groupLanes, groupMore),
     lanes: groupLanes,
     accent: accents[index],
   }));
@@ -254,7 +258,7 @@ function partitionLanes(lanes) {
   });
 }
 
-function summarizeGroupTitle(lanes) {
+function summarizeGroupTitle(lanes, groupMore = "외") {
   if (lanes.length === 1) return truncate(compactLaneLabel(lanes[0]), 18);
   if (lanes.length === 2) {
     return truncate(
@@ -262,7 +266,14 @@ function summarizeGroupTitle(lanes) {
       18
     );
   }
-  return `${truncate(compactLaneLabel(lanes[0]), 13)} 외 ${lanes.length - 1}`;
+  const first = truncate(compactLaneLabel(lanes[0]), 13);
+  const rest = lanes.length - 1;
+  // Word-like connectors (e.g. Korean "외") read as their own token and get
+  // spaces on both sides ("First 외 2"); symbol connectors (e.g. "+") attach
+  // directly to the count with only a leading space ("First +2").
+  return /\p{L}/u.test(groupMore)
+    ? `${first} ${groupMore} ${rest}`
+    : `${first} ${groupMore}${rest}`;
 }
 
 function compactLaneLabel(lane) {
@@ -348,14 +359,14 @@ const MAX_COLLINEAR_EDGE_OVERLAP = 40;
  * directly and derives process/groups internally, and must not depend on
  * institution.slug / institution.category anywhere.
  */
-export function buildLayout(board, { titleOverrides = {} } = {}) {
+export function buildLayout(board, { titleOverrides = {}, groupMore = "외" } = {}) {
   const process = {
     lanes: board.lanes,
     stages: board.stages,
     nodes: board.nodes,
     edges: board.edges,
   };
-  const groups = buildProcessLaneGroups(process.lanes, { titleOverrides });
+  const groups = buildProcessLaneGroups(process.lanes, { titleOverrides, groupMore });
 
   const groupWidth = (GRID_RIGHT - GROUP_X) / groups.length;
   const stageIndex = new Map(process.stages.map((stage, index) => [stage, index]));

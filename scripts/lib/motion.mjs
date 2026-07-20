@@ -25,7 +25,8 @@ const HOLD = 2.0; // seconds fully revealed before looping
  * top level, so this reads board.stages/board.nodes/board.edges directly.
  */
 export function buildMotionSchedule(board, profile = "default") {
-  const context = buildLayout(board, { titleOverrides: getProfile(profile).titleOverrides });
+  const p = getProfile(profile);
+  const context = buildLayout(board, { titleOverrides: p.titleOverrides, groupMore: p.groupMore });
 
   const stageIndex = new Map(board.stages.map((stage, index) => [stage, index]));
   const nodeStage = new Map(
