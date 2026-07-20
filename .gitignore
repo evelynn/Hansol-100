@@ -2,3 +2,4 @@ node_modules/
 *.out.svg
 *.out.png
 fixtures/*.out.*
+.omc/
