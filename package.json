@@ -6,7 +6,7 @@
   "bin": { "korea100studio": "scripts/board.mjs" },
   "files": ["SKILL.md","README.md","LICENSE","agents/","schemas/","scripts/","references/","templates/","fixtures/"],
   "scripts": {
-    "test": "node --test tests/",
+    "test": "node --test tests/*.test.mjs",
     "render": "node scripts/board.mjs render",
     "audit": "node scripts/board.mjs audit"
   },
