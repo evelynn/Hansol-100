@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Unified CLI for korea100studio boards: render / audit / validate / motion / check.
+// Unified CLI for hansol-process-board: render / audit / validate / motion / check.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -10,7 +10,7 @@ import { computeComposition, budgetViolations } from "./lib/composition.mjs";
 import { buildMotionSvg } from "./lib/motion.mjs";
 import { rasterize, rasterizerAvailable } from "./lib/rasterize.mjs";
 
-const USAGE = `Usage: korea100studio <command> <board.json> [options]
+const USAGE = `Usage: hansol-process-board <command> <board.json> [options]
 
 Commands:
   render <board.json> [--out f.svg] [--png] [--profile p]   Render a board to SVG (and optionally PNG)

@@ -6,17 +6,17 @@ notes). Profiles live in `scripts/lib/profiles.mjs` and are selected via
 `--profile <name>` on the CLI, or the board's own `"profile"` field, falling
 back to `default`.
 
-## `default` vs `gov`
+## `default` vs `gov` vs `hansol`
 
 ### Emphasis → badge label
 
-| `emphasis` | `default` badge | `gov` badge |
-|---|---|---|
-| `lead` | Lead | 선행 (leading) |
-| `key` | Key | 핵심 (core) |
-| `normal` | Step | 후속 (follow-up) |
-| `bottleneck` | Bottleneck | 병목 (bottleneck) |
-| `loop` | Loop | 회귀 (return) |
+| `emphasis` | `default` badge | `gov` badge | `hansol` badge |
+|---|---|---|---|
+| `lead` | Lead | 선행 (leading) | 주관 (owns/initiates the step) |
+| `key` | Key | 핵심 (core) | 핵심 (decisive step) |
+| `normal` | Step | 후속 (follow-up) | 진행 (routine step) |
+| `bottleneck` | Bottleneck | 병목 (bottleneck) | 지연 (delay-prone step) |
+| `loop` | Loop | 회귀 (return) | 반려 (returned / rework) |
 
 Each badge also carries a fill/border/ink/sub color set. `default` uses a
 neutral blue/slate palette (`key` renders as solid dark slate,
@@ -25,12 +25,19 @@ government look: `key` is solid green (`#087452`), `bottleneck` is amber,
 `loop` is blue, and the overall accent is violet (`#7c3aed`, vs. `default`'s
 blue `#2563eb`).
 
+`hansol` is the Hansol corporate profile: a Korean business-process look with
+approval-flow badges. `key` renders as solid corporate blue (`#0f4c81`, also
+the accent), `bottleneck`/지연 is amber, and `loop`/반려 is red (`#d1434b`) to
+read as a returned/rejected approval. All chrome text is company-oriented —
+`부서·담당` instead of actors — and `refsLabel` is `근거` for citing internal
+사규·지침 (규정·전결규정 등) rather than statutes.
+
 ### `refsLabel`
 
 The heading shown above a node's `refs[]` citations in the rendered card.
-`default` uses `"Refs"`; `gov` uses `"조문"` (statute article). Set this when
-adding a profile for a different citation convention (e.g. `"Sources"`,
-`"근거"`).
+`default` uses `"Refs"`; `gov` uses `"조문"` (statute article); `hansol` uses
+`"근거"` (internal rule/basis). Set this when adding a profile for a different
+citation convention (e.g. `"Sources"`).
 
 ### Chrome text (`labels`)
 
@@ -71,7 +78,7 @@ Edit `scripts/lib/profiles.mjs`:
    English fallbacks per key).
 2. Register it in the `PROFILES` map:
    ```js
-   const PROFILES = { default: DEFAULT, gov: GOV, yourProfile: YOUR_PROFILE };
+   const PROFILES = { default: DEFAULT, gov: GOV, hansol: HANSOL, yourProfile: YOUR_PROFILE };
    ```
 3. Use it via `--profile yourProfile` on any CLI command, or set
    `"profile": "yourProfile"` in the board JSON.

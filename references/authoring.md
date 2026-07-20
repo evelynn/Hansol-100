@@ -7,6 +7,11 @@ The full field list and types are in `schemas/board-v1.schema.json`; this
 page is about the *mapping* — turning a natural-language description into
 those fields.
 
+> 한국어로 된 단계별 입력 매뉴얼(담당자용)과 AI 입력 가이드는
+> `docs/manual/`을 참고하세요. 한솔 사내용으로는 `"profile": "hansol"`을
+> 사용합니다 — 결재 흐름 한글 배지(주관/핵심/진행/지연/반려)와 `근거` 인용
+> 라벨이 적용됩니다.
+
 ## Mapping a description onto the schema
 
 | Process concept | board-v1 field | Notes |
