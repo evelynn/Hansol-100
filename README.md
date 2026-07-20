@@ -23,22 +23,27 @@ see [`assets/example-motion.svg`](assets/example-motion.svg), generated with
 
 ## Install
 
-Clone into your agent's skills directory:
+**As an Agent Skill** (Claude Code / Codex) — clone into your skills directory so
+the agent picks up `SKILL.md`:
 
 ```bash
 # Claude Code
 git clone https://github.com/hosungseo/korea100studio.git ~/.claude/skills/korea100studio
-
 # Codex
 git clone https://github.com/hosungseo/korea100studio.git ~/.agents/skills/korea100studio
+
+cd ~/.claude/skills/korea100studio   # or wherever you cloned it
+npm install && npm test
 ```
 
-Then:
+**As a CLI** (any project) — via npm:
 
 ```bash
-cd ~/.claude/skills/korea100studio   # or wherever you cloned it
-npm install
-npm test
+npm install -g korea100studio
+korea100studio render board.json --out board.svg
+
+# or without installing:
+npx korea100studio render board.json --out board.svg
 ```
 
 ## Quickstart
