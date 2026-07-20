@@ -69,7 +69,40 @@ const DEFAULT = {
   },
 };
 
-const PROFILES = { default: DEFAULT, gov: GOV };
+// Hansol corporate profile: Korean business-process look for internal use.
+// Badges read as approval-flow roles (주관/핵심/진행/지연/반려) and all chrome
+// text is company-oriented (부서·담당 instead of 행위자, 근거 for internal
+// 규정·지침 citations). Blue accent (#0f4c81) for a neutral corporate identity.
+const HANSOL = {
+  status: {
+    lead: { label: "주관", fill: "#eaf3fb", border: "#2b7fc4", ink: "#123a5c", sub: "#2b6ca8" },
+    key: { label: "핵심", fill: "#0f4c81", border: "#0f4c81", ink: "#ffffff", sub: "#cfe1f2" },
+    normal: { label: "진행", fill: "#ffffff", border: "#c3ccd6", ink: "#1f2937", sub: "#5b6773" },
+    bottleneck: { label: "지연", fill: "#fff7ea", border: "#d98a1a", ink: "#7a4605", sub: "#a8620a" },
+    loop: { label: "반려", fill: "#fdecec", border: "#d1434b", ink: "#7a1f24", sub: "#b23239" },
+  },
+  refsLabel: "근거",
+  accent: "#0f4c81",
+  titleOverrides: {},
+  groupMore: "외",
+  labels: {
+    stageAxis: "단계 ↓",
+    actorAxis: "부서·담당 →",
+    legendTitle: "읽는 법",
+    sequenceLabel: "업무 흐름",
+    messageLabel: "정보 공유",
+    loopLabel: "반려·재작업",
+    statsTemplate: "업무 {nodes} · 부서 {lanes} · 단계 {stages}",
+    groupingNoteTemplate:
+      "원래 {lanes}개 부서·담당 레인을 {groups}개 레이아웃 묶음으로 배치했으며, {nodes}개 업무와 {edges}개 연결 관계는 유지했습니다.",
+    readingNote: "단계는 위→아래, 부서·담당은 좌→우로 읽습니다.",
+    sourceNote:
+      "한솔 사내 업무 프로세스 모델 · 실제 결재·전결 권한은 사내 규정 및 전결 규정을 따릅니다.",
+    creditLine: "",
+  },
+};
+
+const PROFILES = { default: DEFAULT, gov: GOV, hansol: HANSOL };
 
 export function getProfile(name) {
   return PROFILES[name] ?? DEFAULT;

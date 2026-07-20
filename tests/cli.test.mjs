@@ -45,12 +45,12 @@ test("audit on a board with a dangling edge endpoint exits non-zero", () => {
 
 test("--help exits 0 and prints usage to stdout", () => {
   const out = execFileSync("node", [CLI, "--help"], { encoding: "utf8" });
-  assert.match(out, /Usage: korea100studio/);
+  assert.match(out, /Usage: hansol-process-board/);
 });
 
 test("no command exits 0 with help", () => {
   const out = execFileSync("node", [CLI], { encoding: "utf8" });
-  assert.match(out, /Usage: korea100studio/);
+  assert.match(out, /Usage: hansol-process-board/);
 });
 
 test("unknown command exits non-zero", () => {

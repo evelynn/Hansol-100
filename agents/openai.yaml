@@ -1,9 +1,9 @@
-# Codex UI metadata for the korea100studio skill.
+# Codex UI metadata for the hansol-process-board skill.
 # Entry point for behavior/instructions is SKILL.md — this file only feeds
-# Codex's skill picker/interface surface (mirrors fireworks-tech-graph's shape).
-name: korea100studio
+# Codex's skill picker/interface surface.
+name: hansol-process-board
 entrypoint: SKILL.md
 interface:
-  display_name: "korea100studio"
-  short_description: "Turn a process description into a swimlane process board, audit it, and animate it"
-  default_prompt: "Use $korea100studio to turn the user's process or workflow description into a board-v1 JSON, render it as a vertical swimlane SVG (optional PNG) with scripts/board.mjs render, audit composition quality with the audit subcommand, and render a stage-ordered reveal animation with the motion subcommand."
+  display_name: "한솔 업무 프로세스 보드 (Hansol Process Board)"
+  short_description: "업무 절차 설명을 부서×단계×업무 스윔레인 보드로 만들고, 품질을 점검하고, 애니메이션까지 생성"
+  default_prompt: "Use $hansol-process-board to turn the user's business process or workflow description (Korean or English) into a board-v1 JSON, render it as a vertical swimlane SVG (optional PNG) with scripts/board.mjs render using the hansol profile, audit composition quality with the audit subcommand, and render a stage-ordered reveal animation with the motion subcommand."

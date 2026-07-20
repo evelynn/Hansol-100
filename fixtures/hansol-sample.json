@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "profile": "hansol",
+  "title": "구매 요청·승인·발주 프로세스",
+  "subtitle": "요청부서의 구매 요청부터 부서장 승인·구매 발주·검수·대금 정산까지의 사내 업무 흐름",
+  "lanes": [
+    "요청부서",
+    "부서장",
+    "구매팀",
+    "재무팀"
+  ],
+  "stages": [
+    "S1 요청",
+    "S2 승인",
+    "S3 발주",
+    "S4 검수·정산"
+  ],
+  "nodes": [
+    {
+      "id": "N1",
+      "lane": "요청부서",
+      "stage": "S1 요청",
+      "label": "구매 요청서 작성·제출",
+      "emphasis": "lead",
+      "note": "품목·수량·희망 납기·예산 계정을 기재해 전자결재로 상신합니다.",
+      "refs": [
+        { "source": "구매관리규정 제5조", "note": "구매 요청 절차" }
+      ]
+    },
+    {
+      "id": "N2",
+      "lane": "부서장",
+      "stage": "S2 승인",
+      "label": "부서장 검토·승인",
+      "emphasis": "key",
+      "note": "요청 타당성과 예산 범위를 확인하고 전결 권한에 따라 승인/반려합니다.",
+      "refs": [
+        { "source": "전결규정 별표2", "note": "구매 금액별 전결 권한" }
+      ]
+    },
+    {
+      "id": "N3",
+      "lane": "요청부서",
+      "stage": "S2 승인",
+      "label": "반려 사유 보완·재상신",
+      "emphasis": "loop",
+      "note": "부서장이 반려하면 사유를 반영해 요청서를 보완한 뒤 다시 상신합니다."
+    },
+    {
+      "id": "N4",
+      "lane": "구매팀",
+      "stage": "S3 발주",
+      "label": "업체 선정·견적 비교",
+      "emphasis": "normal",
+      "note": "3개사 이상 견적을 비교해 최적 조건의 공급업체를 선정합니다.",
+      "refs": [
+        { "source": "구매관리규정 제12조", "note": "경쟁 견적 원칙" }
+      ]
+    },
+    {
+      "id": "N5",
+      "lane": "재무팀",
+      "stage": "S3 발주",
+      "label": "예산·지출 검토",
+      "emphasis": "bottleneck",
+      "note": "가용 예산과 지출 계정을 확인합니다. 예산 초과 시 지연이 발생하는 구간입니다."
+    },
+    {
+      "id": "N6",
+      "lane": "구매팀",
+      "stage": "S3 발주",
+      "label": "발주서 발행",
+      "emphasis": "normal",
+      "note": "확정된 조건으로 발주서를 발행하고 공급업체에 통보합니다."
+    },
+    {
+      "id": "N7",
+      "lane": "요청부서",
+      "stage": "S4 검수·정산",
+      "label": "납품 검수",
+      "emphasis": "normal",
+      "note": "납품 물품의 수량·규격·품질을 확인하고 검수 결과를 등록합니다."
+    },
+    {
+      "id": "N8",
+      "lane": "재무팀",
+      "stage": "S4 검수·정산",
+      "label": "대금 지급·정산",
+      "emphasis": "normal",
+      "note": "검수 완료 및 세금계산서를 확인한 뒤 지급 조건에 따라 대금을 정산합니다.",
+      "refs": [
+        { "source": "지급관리지침 제3조", "note": "대금 지급 기준" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "E1", "source": "N1", "target": "N2", "type": "sequence", "label": "상신" },
+    { "id": "L1", "source": "N2", "target": "N3", "type": "loop", "label": "반려" },
+    { "id": "E2", "source": "N3", "target": "N2", "type": "sequence", "label": "재상신" },
+    { "id": "E3", "source": "N2", "target": "N4", "type": "sequence", "label": "승인" },
+    { "id": "E4", "source": "N4", "target": "N5", "type": "sequence" },
+    { "id": "E5", "source": "N5", "target": "N6", "type": "sequence", "label": "예산 확인" },
+    { "id": "M1", "source": "N6", "target": "N7", "type": "message", "label": "납품 예정 통보" },
+    { "id": "E6", "source": "N6", "target": "N7", "type": "sequence" },
+    { "id": "E7", "source": "N7", "target": "N8", "type": "sequence", "label": "검수 완료" }
+  ]
+}

@@ -22,3 +22,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      # Standardization gate: every shipped sample board must pass the
+      # schema + composition-quality budget under --strict.
+      - name: Validate sample boards
+        run: |
+          for f in fixtures/hansol-sample.json fixtures/generic-sample.json fixtures/gov-sample.json; do
+            node scripts/board.mjs validate "$f" --strict
+          done
