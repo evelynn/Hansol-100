@@ -71,6 +71,10 @@ export const Preview = {
   validate: (source, opts = {}) => request("/api/validate", { method: "POST", body: { source, ...opts } }),
 };
 
+export const Convert = {
+  run: (source, to, opts = {}) => request("/api/convert", { method: "POST", body: { source, to, ...opts } }),
+};
+
 export const Templates = {
   list: () => request("/api/templates"),
   get: (name) => request(`/api/templates/${enc(name)}`),

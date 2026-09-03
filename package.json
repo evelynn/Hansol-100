@@ -1,6 +1,6 @@
 {
   "name": "hansol-100",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "All-in-one diagram studio: swimlane process boards (korea100studio engine) + Archify architecture/workflow/sequence/dataflow/lifecycle diagrams, usable as an Agent Skill (Claude Code / Codex) and as a shareable web service with a searchable, editable library.",
   "type": "module",
   "bin": {

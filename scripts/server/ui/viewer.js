@@ -2,7 +2,7 @@ import { t, kindLabel } from "./i18n.js";
 import { h, clear, toast, toastError, relativeTime, formatBytes, download, svgToPngBlob, dropdown } from "./util.js";
 import { Diagrams } from "./api.js";
 import { createCanvas, zoomBar } from "./canvas.js";
-import { deleteItem, duplicateItem } from "./actions.js";
+import { deleteItem, duplicateItem, convertItem } from "./actions.js";
 
 const METRIC_KEYS = ["score", "nodePiercings", "crossings", "bendsPerEdgeMax", "routeStretchMax", "adjustedLabels"];
 
@@ -27,12 +27,13 @@ export function renderReceipt(result) {
   const wrap = h("div");
   if (receipt.ok) {
     const passed = (receipt.checks || []).filter((c) => c.ok).length;
-    wrap.append(h("div.notice.good", t("validation.pass", { passed, count: receipt.checks?.length ?? 0, errors: receipt.composition?.summary?.errors ?? 0, warnings: receipt.composition?.summary?.warnings ?? 0 })));
+    wrap.append(h("div.notice.good", t("validation.pass", { profile: receipt.composition?.profile || "standard", passed, count: receipt.checks?.length ?? 0, errors: receipt.composition?.summary?.errors ?? 0, warnings: receipt.composition?.summary?.warnings ?? 0 })));
   } else {
     wrap.append(h("div.notice.bad", `${t("validation.fail")} — ${receipt.error || ""}`));
   }
-  if (receipt.checks?.length) {
-    wrap.append(h("ul.checks", receipt.checks.map((c) => h("li", { class: c.ok ? "" : "fail" }, c.name, c.details?.length && !c.ok ? h("span.dim", ` — ${c.details.join("; ")}`) : null))));
+  const checks = receipt.checks || receipt.checker?.checks;
+  if (checks?.length) {
+    wrap.append(h("ul.checks", checks.map((c) => h("li", { class: c.ok ? "" : "fail" }, c.name, c.details?.length && !c.ok ? h("span.dim", ` — ${c.details.join("; ")}`) : null))));
   }
   if (receipt.diagnostics?.length) wrap.append(renderDiagnostics(receipt.diagnostics));
   return wrap;
@@ -94,6 +95,7 @@ export function mountViewer(root, id) {
       item.subtitle ? h("span.sub", item.subtitle) : null,
       h("span.spacer"),
       h("a.btn.primary", { href: `#/edit/${encodeURIComponent(id)}` }, t("action.edit")),
+      ...(item.conversions || []).map((to) => h("button.btn", { type: "button", title: t("convert.hint"), onclick: () => convertItem(item, to) }, t(`action.convertTo.${to}`))),
       h("button.btn", { type: "button", onclick: () => duplicateItem(item) }, t("action.duplicate")),
       dropdown(t("action.export"), exportItems),
       h("button.btn.danger", { type: "button", onclick: async () => { if (await deleteItem(item)) location.hash = "#/"; } }, t("action.delete")),
@@ -162,7 +164,7 @@ export function mountViewer(root, id) {
         clear(result);
         result.append(h("span.hint", t("validation.running")));
         try {
-          const receipt = await Diagrams.audit(id, { quality: "showcase" });
+          const receipt = await Diagrams.audit(id);
           clear(result);
           result.append(renderReceipt(receipt));
         } catch (err) {
@@ -176,6 +178,17 @@ export function mountViewer(root, id) {
     }
 
     side.append(h("h3", t("side.export")), h("div.rowlist", exportItems.map((entry) => h("button.btn.small", { type: "button", onclick: entry.onclick }, entry.label))));
+
+    // Other renditions of the same process (e.g. the board and its converted
+    // Archify workflow share a title) — the synergy made visible.
+    Diagrams.list({ q: item.title, limit: 50 }).then((result) => {
+      const siblings = result.items.filter((other) => other.id !== item.id && other.title === item.title);
+      if (!siblings.length) return;
+      side.append(
+        h("h3", t("side.renditions")),
+        h("div.rowlist", siblings.map((other) => h("a.btn.small", { href: `#/view/${encodeURIComponent(other.id)}` }, h("span.badge", { class: `kind-${other.kind}` }, kindLabel(other.kind)), " ", other.id))),
+      );
+    }).catch(() => {});
     container.append(head, stage, side);
   }
 

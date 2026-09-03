@@ -21,6 +21,7 @@ import { renderBoardSvg } from "../lib/render-svg.mjs";
 import { computeComposition } from "../lib/composition.mjs";
 import { buildMotionSvg } from "../lib/motion.mjs";
 import { rasterize, describeRasterizer } from "../lib/rasterize.mjs";
+import { convertDocument, conversionTargets, ConvertError } from "../lib/convert.mjs";
 import {
   ARCHIFY_TEMPLATE_FILES,
   archifyInfo,
@@ -365,9 +366,11 @@ export function createApp({
           board: { available: true, profiles: ["default", "gov"] },
           archify: {
             available: archify.available,
+            source: archify.source,
+            root: archify.root,
             version: archify.version,
             types: ARCHIFY_TYPES,
-            source: archify.vendor?.source ?? null,
+            upstream: archify.vendor?.source ?? null,
           },
         },
         rasterizer: describeRasterizer(),
@@ -458,6 +461,21 @@ export function createApp({
       return result;
     },
 
+    async convert(body, query) {
+      const source = requireSource(body);
+      const to = body.to || query.get("to");
+      if (!to) throw new HttpError(400, "missing-target", `body.to is required (targets: ${conversionTargets(source).join(", ") || "none"})`);
+      let result;
+      try {
+        result = convertDocument(source, to, { quality: body.quality, profile: body.profile });
+      } catch (err) {
+        if (err instanceof ConvertError) throw new HttpError(422, `convert/${err.code}`, err.message, err.details);
+        throw err;
+      }
+      const validation = validateDocument(result.document, { thorough: body.thorough !== false, quality: body.quality });
+      return { ok: validation.ok, from: result.from, to, source: result.document, validation: { ok: validation.ok, errors: validation.errors, ...(validation.receipt ? { receipt: validation.receipt } : {}), ...(validation.audit ? { audit: validation.audit } : {}) } };
+    },
+
     async trash() {
       if (!fs.existsSync(library.trashDir)) return { items: [] };
       const items = fs.readdirSync(library.trashDir)
@@ -499,6 +517,7 @@ export function createApp({
     if (segments.length === 1 && segments[0] === "diagrams" && method === "POST") return sendJson(res, 201, await api.create(await readJsonBody(req)));
     if (segments.length === 1 && segments[0] === "preview" && method === "POST") return sendJson(res, 200, await api.preview(await readJsonBody(req), query));
     if (segments.length === 1 && segments[0] === "validate" && method === "POST") return sendJson(res, 200, await api.validate(await readJsonBody(req), query));
+    if (segments.length === 1 && segments[0] === "convert" && method === "POST") return sendJson(res, 200, await api.convert(await readJsonBody(req), query));
     if (segments.length === 1 && segments[0] === "templates" && method === "GET") return sendJson(res, 200, { items: listTemplates() });
     if (segments.length === 2 && segments[0] === "templates" && method === "GET") {
       const doc = readTemplate(segments[1]);
@@ -518,7 +537,10 @@ export function createApp({
     const id = requireId(segments[1]);
 
     if (segments.length === 2) {
-      if (method === "GET") return sendJson(res, 200, loadDiagram(id));
+      if (method === "GET") {
+        const item = loadDiagram(id);
+        return sendJson(res, 200, { ...item, conversions: conversionTargets(item.source) });
+      }
       if (method === "PUT") return sendJson(res, 200, await api.update(id, await readJsonBody(req)));
       if (method === "DELETE") return sendJson(res, 200, await api.remove(id));
       throw new HttpError(405, "method-not-allowed", `${method} not allowed`);

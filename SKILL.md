@@ -25,8 +25,12 @@ One Skill, two engines, one service:
 | **service** (`hansol100 serve`) | The `library/` folder of JSON files | Web app + JSON API | Browsing, searching, editing, exporting and sharing everything above |
 
 All commands run from the skill root: `node bin/hansol.mjs <command>` (aliased
-as `hansol100` when installed with npm). Run `node bin/hansol.mjs doctor` once
-to confirm both engines are present.
+as `hansol100` when installed with npm). Run `node bin/hansol.mjs doctor` once:
+it says which Archify is in use (vendored `engines/archify`, an external
+install via `HANSOL_ARCHIFY_ROOT`, or a discovered Skill install) or that the
+product is in **board-only mode** (no Archify: boards, library, service and
+workflow → board conversion still work; report Archify requests as
+unavailable instead of improvising).
 
 ## 1. Pick the engine
 
@@ -97,6 +101,29 @@ diagram.json` and `node bin/hansol.mjs render diagram.json --out out.html`
 detect `diagram_type` and run Archify's `validate --json` / `deliver --json`.
 A non-zero exit is never success; report the diagnostics' `subject`,
 `evidence` and `supportedFixes` truthfully.
+
+## 3b. Both at once: convert between the engines (synergy)
+
+When the user wants the same process as a print/government-style board *and*
+as an interactive Archify diagram, author it once and convert:
+
+```bash
+node bin/hansol.mjs convert board.json --to workflow [--out board.workflow.json] [--quality standard|showcase]
+node bin/hansol.mjs convert diagram.workflow.json --to board [--profile gov]
+```
+
+The converter keeps lanes, stages (≤ 6 → columns), nodes, emphasis (legend
+relabelled in board terms), notes/refs (sublabel/tag) and edge types
+(sequence/message/loop ↔ default/async/return), fits Archify's single-line
+text rules (over-long text is shortened and preserved in `cards`), stacks
+same-cell nodes, and routes long returns above the lanes; the result is
+validated with the target engine and the command exits 1 if it does not pass
+(the file is still written so you can repair it). Review the converted file
+like any authored document: `validate`, then `render`/`deliver`, then
+`library add`. A board with more than 6 stages must be merged first — say so
+rather than dropping stages. Boards with many crossings pass the `standard`
+Archify profile with warnings; `showcase` may report crossings that need
+manual `via`/routing work.
 
 ## 4. Library and service (make it browsable, editable, shareable)
 

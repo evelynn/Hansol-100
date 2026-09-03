@@ -3,6 +3,30 @@
 All notable changes to Hansol-100 are documented here. Versions follow
 [semver](https://semver.org/). Entries before 1.0.0 are korea100studio's.
 
+## [1.1.0] - 2026-09-03
+
+Independence and synergy: the merge is no longer "two engines side by side".
+
+### Added
+- **Board ⇄ Archify workflow converter** (`scripts/lib/convert.mjs`):
+  `hansol100 convert <file> --to board|workflow`, `POST /api/convert`, and
+  viewer buttons that open the converted document as a draft. Emphasis ↔
+  Archify kinds with relabelled legends (profile-aware, Korean for `gov`),
+  notes/refs ↔ sublabel/tag, edge types ↔ roles, node width fitting against
+  Archify's text rules with full text preserved in `cards`, same-cell
+  stacking via `yOffset`, long returns routed above the lanes. Results
+  validate on the target engine; tests prove both directions and the round
+  trip.
+- **Engine resolution order** for Archify: `HANSOL_ARCHIFY_ROOT` → vendored
+  `engines/archify` → discovered installs (`~/.claude/skills/archify`,
+  `~/.agents/skills/archify`, `~/.config/opencode/skills/archify`,
+  `../archify/archify`). `doctor` and `/api/health` report which one is used.
+- **Board-only mode**: without any Archify the CLI, library, service and UI
+  keep working; Archify commands fail with one clear message; `doctor` lists
+  the engine as optional. Tests cover board-only and external-root modes.
+- Viewer: "Other renditions" panel linking documents that share a title;
+  diagram API responses list available conversion targets.
+
 ## [1.0.0] - 2026-09-03
 
 Hansol-100 Studio: korea100studio (process boards) + Archify (typed diagrams)

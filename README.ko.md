@@ -14,6 +14,19 @@ Hansol-100은 두 다이어그램 엔진을 하나의 제품으로 합쳤습니�
 | 🏗️ | **Archify** — [`engines/archify/`](engines/archify/)에 벤더링된 클린 스킬 패키지 | Archify 타입 JSON(architecture · workflow · sequence · dataflow · lifecycle) → 검증된 인터랙티브 독립 실행 HTML |
 | 🌐 | **스튜디오 서비스** — `hansol100 serve` | `library/` 폴더의 JSON 파일 → 검색·뷰어·폼/JSON 편집기·실시간 미리보기·검증·내보내기·휴지통 복원·JSON API를 갖춘 웹 앱 |
 
+**무조건적인 병합이 아닙니다.** 각 엔진은 단독으로도 온전히 동작하고, 합쳐졌을
+때는 둘 다 혼자서는 못 하는 일이 생깁니다.
+
+- **독립 동작** — korea100studio CLI는 손대지 않았습니다(`scripts/board.mjs`,
+  `korea100studio` bin). Archify는 수정 없는 패키지로 소비되며 어디에 있어도
+  됩니다: 벤더링된 복사본, 이미 스킬로 설치해 둔 Archify, 또는 체크아웃
+  (`HANSOL_ARCHIFY_ROOT`). Archify가 전혀 없으면 **보드 전용 모드**로
+  동작합니다(CLI·라이브러리·서비스 모두 유지). [엔진 독립성](#엔진-독립성) 참고.
+- **시너지** — 두 엔진을 위한 하나의 JSON 우선 CLI/API/라이브러리/서비스, 엔진
+  중립 `render`/`validate`, 그리고 결과가 대상 엔진 검증을 통과하는 **보드 ⇄
+  Archify 워크플로 변환기**. 한 번 작성한 프로세스가 인쇄 품질의 정부 스타일
+  보드와 인터랙티브·검증된 Archify 다이어그램 둘 다가 됩니다. [시너지](#시너지) 참고.
+
 합쳐진 제품의 업데이트·수정은 이 저장소에서 합니다. 업스트림 Archify 변경은
 명령 하나로 가져옵니다([Archify 엔진 업데이트](#archify-엔진-업데이트) 참고).
 
@@ -48,6 +61,7 @@ cd ~/.claude/skills/hansol100 && npm install && npm test
 | `validate <file.json> [--strict] [--json]` | 보드: 스키마 + 참조 + 레이아웃(`--strict`면 예산 위반도 실패); Archify: `validate --json` |
 | `audit <file.json> [--json]` | 구성 지표·점수(보드) 또는 Archify 영수증 |
 | `detect <file.json> [--json]` | 파일이 어느 엔진/종류인지와 요약 |
+| `convert <file.json> --to board\|workflow [--out path] [--quality q] [--profile p] [--json]` | 보드 ⇄ Archify 워크플로 변환; 결과를 대상 엔진으로 검증(통과 못 하면 exit 1) |
 | `board <render\|audit\|validate\|motion\|check> …` | korea100studio CLI(`scripts/board.mjs`) 그대로 전달 |
 | `archify <render\|validate\|deliver\|guide\|compare\|…> …` | Archify CLI(`engines/archify/bin/archify.mjs`) 그대로 전달 |
 | `library list\|search\|add\|show\|remove\|export\|path` | 서비스 콘텐츠 저장소 관리(`library/`, `--library DIR`, `HANSOL_LIBRARY`) |
@@ -107,6 +121,36 @@ PNG는 `rsvg-convert`, `cairosvg`, 또는 아무 Chrome/Chromium
 Archify HTML을 요청 시 렌더하고 검증 영수증을 보여주며, CLI의 엔진 중립
 `render`/`validate`는 Archify 자체의 `deliver --json` / `validate --json`을 씁니다.
 
+## 엔진 독립성
+
+| 모드 | 방법 | 동작 범위 |
+|---|---|---|
+| **전체**(기본) | 벤더링된 `engines/archify/` | 전부 |
+| **외부 Archify** | `HANSOL_ARCHIFY_ROOT=/path/to/archify`(클린 패키지 또는 체크아웃의 `archify/` 디렉터리); 환경변수가 없고 벤더링 복사본도 없으면 `~/.claude/skills/archify`, `~/.agents/skills/archify`, `~/.config/opencode/skills/archify`, 형제 디렉터리 `../archify/archify`를 자동 탐색 | 전부, 단 *그* Archify로 — 중복 설치 불필요 |
+| **보드 전용** | Archify가 어디에도 없음 | 보드·감사·모션·라이브러리·서비스·워크플로→보드 변환; Archify 명령은 명확한 메시지 한 줄로 실패, UI는 “보드 전용 모드” 표시, `doctor`는 선택 엔진으로 보고 |
+| **Archify 단독** | Archify 저장소나 `npx skills add tt-a1i/archify`를 기존처럼 사용 | 변화 없음; Archify는 Hansol-100에 의존하지 않음 |
+
+`node bin/hansol.mjs doctor`가 어떤 Archify를 어디서 쓰는지 보여줍니다.
+
+## 시너지
+
+- **두 엔진, 하나의 표면** — `render`/`validate`/`audit`/`detect`가 JSON에서
+  엔진을 고르고, 라이브러리·검색·서비스·편집기가 두 종류를 같은 방식으로 다룹니다
+  (뷰어·검증은 엔진별).
+- **보드 ⇄ Archify 워크플로 변환** — `hansol100 convert`, `/api/convert`,
+  뷰어의 “→ Archify 워크플로로 변환 / → 프로세스 보드로 변환” 버튼:
+  - 레인 → 레인, 단계 → 페이즈/컬럼(≤ 6), 노드 → 노드(`emphasis`를 Archify
+    종류로 매핑하고 범례를 보드 용어 또는 `gov` 프로필의 선행/핵심/병목/회귀로
+    재표기), `note`/`refs` → sublabel/tag, 연결 유형 → 역할
+    (sequence/message/loop ↔ default/async/return);
+  - Archify의 한 줄 텍스트 규칙을 지킵니다(노드 폭 맞춤, 너무 긴 텍스트는 줄이고
+    전체 텍스트를 `cards`에 보존), 같은 칸의 노드는 `yOffset`으로 쌓고, 긴 회귀
+    연결은 레인 위로 라우팅 — 변환 결과가 그대로 Archify 검증(standard)을 통과;
+  - 역방향은 페이즈로 컬럼을 단계에 되돌리고 역할을 연결 유형으로 되돌리며,
+    보드 감사를 통과합니다;
+  - 변환 결과는 편집기에 초안으로 열리고 원본은 저장 전까지 그대로입니다. 뷰어는
+    같은 제목의 다른 형식을 나열해 보드와 인터랙티브 쌍둥이를 한 번에 오갑니다.
+
 ## Archify 엔진 업데이트
 
 ```bash
@@ -138,7 +182,7 @@ tests/                    node:test 스위트(엔진, CLI, 라이브러리, 서�
 ## 테스트
 
 ```bash
-npm test                                             # 약 100개 테스트, 브라우저 불필요
+npm test                                             # 약 110개 테스트, 브라우저 불필요 (보드 전용·외부 Archify 모드 포함)
 NODE_PATH=$(npm root -g) node --test tests/ui.browser.test.mjs   # 선택: 전역 Playwright로 실제 브라우저 UI 흐름 검증
 ```
 

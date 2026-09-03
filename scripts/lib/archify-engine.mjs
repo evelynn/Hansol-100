@@ -15,9 +15,44 @@ import { ARCHIFY_TYPES } from "./detect.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const MAX_BUFFER = 64 * 1024 * 1024;
 
+// Engine resolution order — the vendored copy is the default, but Hansol-100
+// never *requires* it: an Archify installed on its own (as a Skill, or a
+// repository checkout) works just as well, and without any Archify the
+// product runs in board-only mode.
+//   1. HANSOL_ARCHIFY_ROOT (explicit; points at a clean package or at the
+//      `archify/` directory of a repository checkout)
+//   2. engines/archify (vendored, tested with this release)
+//   3. a discovered stand-alone install: ~/.claude/skills/archify,
+//      ~/.agents/skills/archify, ~/.config/opencode/skills/archify,
+//      or a sibling checkout ../archify/archify
+export function archifyCandidates() {
+  const home = os.homedir();
+  return [
+    { source: "env", root: process.env.HANSOL_ARCHIFY_ROOT ? path.resolve(process.env.HANSOL_ARCHIFY_ROOT) : null },
+    { source: "vendored", root: path.join(repoRoot, "engines", "archify") },
+    { source: "discovered", root: path.join(home, ".claude", "skills", "archify") },
+    { source: "discovered", root: path.join(home, ".agents", "skills", "archify") },
+    { source: "discovered", root: path.join(home, ".config", "opencode", "skills", "archify") },
+    { source: "discovered", root: path.join(repoRoot, "..", "archify", "archify") },
+  ].filter((c) => c.root);
+}
+
+function hasCli(root) {
+  return fs.existsSync(path.join(root, "bin", "archify.mjs"));
+}
+
+export function archifyResolution() {
+  const candidates = archifyCandidates();
+  if (candidates[0].source === "env") {
+    // An explicit root is authoritative: never fall through silently.
+    return { ...candidates[0], available: hasCli(candidates[0].root) };
+  }
+  for (const candidate of candidates) if (hasCli(candidate.root)) return { ...candidate, available: true };
+  return { ...candidates[0], available: false };
+}
+
 export function archifyRoot() {
-  const override = process.env.HANSOL_ARCHIFY_ROOT;
-  return override ? path.resolve(override) : path.join(repoRoot, "engines", "archify");
+  return archifyResolution().root;
 }
 
 export function archifyCli() {
@@ -25,12 +60,13 @@ export function archifyCli() {
 }
 
 export function archifyAvailable() {
-  return fs.existsSync(archifyCli());
+  return archifyResolution().available;
 }
 
 export function archifyInfo() {
-  const root = archifyRoot();
-  const info = { available: archifyAvailable(), root, version: null, vendor: null };
+  const resolution = archifyResolution();
+  const root = resolution.root;
+  const info = { available: resolution.available, source: resolution.source, root, version: null, vendor: null };
   if (!info.available) return info;
   try {
     info.version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version ?? null;

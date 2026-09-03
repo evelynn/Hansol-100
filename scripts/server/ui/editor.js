@@ -524,7 +524,7 @@ export function mountEditor(root, { id = null, draft = null, template = null }) 
     clear(els.errors);
     els.errors.append(h("span.hint", t("validation.running")));
     try {
-      const result = await Preview.validate(state.doc, { quality: "showcase" });
+      const result = await Preview.validate(state.doc);
       clear(els.errors);
       els.errors.append(renderReceipt(result));
     } catch (err) {

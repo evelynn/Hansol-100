@@ -3,10 +3,10 @@ import { h, clear, toast, toastError, debounce, relativeTime, detect, formatByte
 import { Health, Diagrams, Templates, Trash } from "./api.js";
 import { mountViewer } from "./viewer.js";
 import { mountEditor } from "./editor.js";
-import { deleteItem, duplicateItem } from "./actions.js";
+import { deleteItem, duplicateItem, drafts } from "./actions.js";
 
 const app = document.getElementById("app");
-const shared = { health: null, templates: [], draft: null };
+const shared = { health: null, templates: [] };
 let mounted = null; // { hash, destroy, canLeave }
 let lastHash = "#/";
 
@@ -48,12 +48,12 @@ async function route() {
       view = mountEditor(app, { id: arg });
     } else if (head === "new" && arg === "draft") {
       markNav(null);
-      if (!shared.draft) {
+      if (!drafts.pending) {
         location.hash = "#/import";
         return;
       }
-      view = mountEditor(app, { draft: shared.draft });
-      shared.draft = null;
+      view = mountEditor(app, { draft: drafts.pending });
+      drafts.pending = null;
     } else if (head === "new" && arg) {
       markNav(null);
       view = mountEditor(app, { template: arg });
@@ -135,7 +135,7 @@ function updateEngineStatus() {
     return;
   }
   pill.className = `status-pill ${archify?.available ? "ok" : "bad"}`;
-  pill.textContent = archify?.available ? t("engine.ok", { v: archify.version }) : t("engine.noArchify");
+  pill.textContent = archify?.available ? t("engine.ok", { v: archify.version }) : t("engine.boardOnly");
   pill.title = `hansol-100 ${shared.health.version} · ${shared.health.library?.dir || ""}`;
 }
 
@@ -293,7 +293,7 @@ function mountImport() {
       error.hidden = false;
       return;
     }
-    shared.draft = doc;
+    drafts.pending = doc;
     location.hash = "#/new/draft";
   }
   app.append(

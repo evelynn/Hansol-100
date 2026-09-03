@@ -22,6 +22,7 @@ import { archifyInfo, archifyCli, deliverArchify, validateArchify, runArchify } 
 import { renderBoardSvg } from "../scripts/lib/render-svg.mjs";
 import { buildMotionSvg } from "../scripts/lib/motion.mjs";
 import { rasterize, describeRasterizer } from "../scripts/lib/rasterize.mjs";
+import { convertDocument, conversionTargets, ConvertError } from "../scripts/lib/convert.mjs";
 import { VALIDATOR } from "../scripts/lib/validate.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -37,6 +38,8 @@ Any diagram (engine detected from the JSON):
   validate <file.json> [--strict] [--json] [--quality q]
   audit <file.json> [--json]
   detect <file.json> [--json]
+  convert <file.json> --to board|workflow [--out path] [--quality q] [--profile p] [--json]
+                                                    board ⇄ Archify workflow (validated with the target engine)
 
 Engines (verbatim pass-through):
   board <render|audit|validate|motion|check> …      korea100studio board CLI (scripts/board.mjs)
@@ -255,6 +258,42 @@ async function cmdValidate(argv, { auditMode = false } = {}) {
   if (!receipt.ok) process.exit(receipt.exitCode || 1);
 }
 
+async function cmdConvert(argv) {
+  const { positional, flags } = parseArgs(argv);
+  const file = positional[0];
+  const doc = readJson(file);
+  detectOrFail(doc, file);
+  const to = flags.to;
+  if (!to) fail(`--to is required (targets for this file: ${conversionTargets(doc).join(", ") || "none"})`, 2);
+  let result;
+  try {
+    result = convertDocument(doc, to, { quality: flags.quality, profile: flags.profile });
+  } catch (err) {
+    if (err instanceof ConvertError) fail(`${err.message}`, 1);
+    throw err;
+  }
+  const out = flags.out || `${stem(file)}.${to}.json`;
+  fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+  fs.writeFileSync(out, `${JSON.stringify(result.document, null, 2)}\n`);
+  const { validateDocument } = await import("../scripts/server/server.mjs");
+  const validation = validateDocument(result.document, { thorough: true, quality: flags.quality });
+  if (flags.json) {
+    console.log(JSON.stringify({ ok: validation.ok, from: result.from, to, output: path.resolve(out), validation }, null, 2));
+  } else {
+    console.log(out);
+    if (validation.ok) {
+      const summary = validation.receipt?.composition
+        ? ` (composition ${validation.receipt.composition.profile}: ${validation.receipt.composition.summary.errors} errors, ${validation.receipt.composition.summary.warnings} warnings)`
+        : validation.audit ? ` (score ${validation.audit.score}, nodePiercings ${validation.audit.metrics.nodePiercings})` : "";
+      console.log(`ok ${result.from} → ${to}: valid ${to} document${summary}`);
+    } else {
+      console.error(`converted ${result.from} → ${to}, but the result has ${validation.errors.length} validation problem(s):`);
+      for (const e of validation.errors.slice(0, 12)) console.error(`  ${e.code ? `[${e.code}] ` : ""}${e.message}${e.supportedFixes?.length ? `\n    fix: ${e.supportedFixes.join("; ")}` : ""}`);
+    }
+  }
+  if (!validation.ok) process.exit(1);
+}
+
 async function cmdLibrary(argv) {
   const [sub, ...rest] = argv;
   const { positional, flags } = parseArgs(rest);
@@ -405,10 +444,16 @@ async function cmdDoctor() {
   checks.push([fs.existsSync(BOARD_CLI), "Board engine (scripts/board.mjs)"]);
   checks.push([true, `Board schema validator: ${VALIDATOR === "ajv" ? "ajv (npm dependency installed)" : "built-in mirror (ajv not installed; run `npm install` for JSON-Schema-exact messages)"}`]);
   const archify = archifyInfo();
-  checks.push([archify.available, `Archify engine (engines/archify) ${archify.available ? `v${archify.version}${archify.vendor ? ` @ ${String(archify.vendor.source?.commit || "").slice(0, 12)}` : ""}` : "missing — run `npm run sync:archify -- --from <archify-repo>`"}`]);
   if (archify.available) {
+    const origin = archify.source === "env" ? `HANSOL_ARCHIFY_ROOT=${archify.root}` : archify.source === "vendored" ? "vendored engines/archify" : `discovered at ${archify.root}`;
+    const commit = archify.vendor ? ` @ ${String(archify.vendor.source?.commit || "").slice(0, 12)}` : "";
+    checks.push([true, `Archify engine v${archify.version}${commit} (${origin})`]);
     const doctor = runArchify(["doctor"]);
     checks.push([doctor.status === 0, `Archify doctor ${doctor.status === 0 ? "ready" : `failed (exit ${doctor.status})`}`]);
+  } else if (process.env.HANSOL_ARCHIFY_ROOT) {
+    checks.push([false, `Archify engine: HANSOL_ARCHIFY_ROOT=${archify.root} has no bin/archify.mjs`]);
+  } else {
+    checks.push([null, "Archify engine: not installed — board-only mode (optional: `npm run sync:archify -- --from <archify-repo>`, or set HANSOL_ARCHIFY_ROOT to an existing Archify install)"]);
   }
   const rasterizer = describeRasterizer();
   checks.push([true, `PNG rasterizer: ${rasterizer || "none (SVG always works; PNG export available in the browser UI)"}`]);
@@ -426,8 +471,8 @@ async function cmdDoctor() {
   console.log("Hansol-100 doctor\n");
   let failures = 0;
   for (const [ok, label] of checks) {
-    if (!ok) failures += 1;
-    console.log(`[${ok ? "ok" : "FAIL"}] ${label}`);
+    if (ok === false) failures += 1;
+    console.log(`[${ok === null ? "--" : ok ? "ok" : "FAIL"}] ${label}`);
   }
   console.log(failures ? `\n${failures} problem(s) found.` : "\nHansol-100 is ready.");
   if (failures) process.exit(1);
@@ -455,6 +500,8 @@ async function main() {
     }
     case "detect":
       return cmdDetect(rest);
+    case "convert":
+      return cmdConvert(rest);
     case "render":
       return cmdRender(rest);
     case "validate":

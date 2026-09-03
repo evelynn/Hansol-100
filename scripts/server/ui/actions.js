@@ -1,6 +1,21 @@
 import { t } from "./i18n.js";
 import { toast, toastError } from "./util.js";
-import { Diagrams } from "./api.js";
+import { Diagrams, Convert } from "./api.js";
+
+// Cross-view hand-off for unsaved documents (import → editor, convert → editor).
+export const drafts = { pending: null };
+
+export async function convertItem(item, to) {
+  try {
+    const result = await Convert.run(item.source, to);
+    drafts.pending = result.source;
+    const errors = result.validation?.errors?.length || 0;
+    toast(errors ? t("toast.convertedInvalid", { n: errors }) : t("toast.converted"), errors ? "error" : "success", 5000);
+    location.hash = "#/new/draft";
+  } catch (err) {
+    toastError(err);
+  }
+}
 
 export async function duplicateItem(item) {
   try {

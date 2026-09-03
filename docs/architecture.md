@@ -31,6 +31,42 @@ Hansol-100 is one repository that behaves as an **Agent Skill** and as a
 | Validate | ajv (or built-in mirror) + referential integrity + layout/composition | `validate --json` (render + 9 artifact checks) |
 | Deliver | write SVG (+PNG via rsvg/cairosvg/Chrome) | `deliver --json` (atomic commit + receipt) |
 
+### Independence: engines are optional and replaceable
+
+Archify is resolved at call time, in this order: `HANSOL_ARCHIFY_ROOT`
+(authoritative; a broken path is reported, never silently skipped) → the
+vendored `engines/archify` → a discovered stand-alone install
+(`~/.claude/skills/archify`, `~/.agents/skills/archify`,
+`~/.config/opencode/skills/archify`, `../archify/archify`). When none exists
+the product runs in board-only mode: `archifyAvailable()` is false, render /
+validate return one structured "engine not found" diagnostic, templates omit
+Archify kinds, the UI shows "Board-only mode", and `doctor` lists the engine
+as optional. Nothing in the board engine imports Archify, and nothing in
+Archify knows about Hansol-100.
+
+### Synergy: the converter
+
+`scripts/lib/convert.mjs` maps between the two document models:
+
+| board-v1 | Archify workflow (v2) |
+|---|---|
+| `lanes[]` (strings) | `lanes[{id,label}]` (ids allocated, labels kept) |
+| `stages[]` (≤ 6) | `phases[{fromCol,toCol}]`, one column per stage |
+| `nodes[].emphasis` lead/key/normal/bottleneck/loop | `nodes[].type` frontend/backend/external/security/messagebus + `meta.legend.entries` relabelled from the board profile |
+| `nodes[].note`, `refs[0].source` | `sublabel`, `tag` |
+| `edges[].type` sequence/message/loop | `variant`/`role` default / dashed+async / emphasis+return |
+
+The Archify compiler enforces single-line node text (`textUnits × 6.8 ≤ width
++ 6`, sublabel/tag at a 6px minimum), ≥ 8px between same-lane nodes, and a
+legend band below the lanes. The converter mirrors those rules: it fits node
+widths (92–200px), shortens over-long text and records the full text in
+`cards`, assigns symmetric `yOffset`s to nodes sharing a lane × column cell,
+and gives return edges that jump back two or more columns `fromSide/toSide:
+"top"` so automatic routing does not cross the legend. The reverse direction
+recovers stages from phases (or synthesises `Step N`), emphasis from kinds,
+and edge types from roles/direction. Both directions are validated by the
+target engine in `tests/convert.test.mjs`, including a round trip.
+
 `scripts/lib/detect.mjs` decides which engine a document belongs to and
 produces the engine-neutral summary (title, lanes, stages, counts, searchable
 text) used by the library and the UI. `scripts/lib/archify-engine.mjs` is the

@@ -14,6 +14,21 @@ an **Agent Skill** (Claude Code / Codex author the JSON) and as a **service**
 | 🏗️ | **Archify** — vendored clean Skill package in [`engines/archify/`](engines/archify/) | Archify typed JSON (architecture · workflow · sequence · dataflow · lifecycle) → validated, interactive standalone HTML |
 | 🌐 | **Studio service** — `hansol100 serve` | The `library/` folder of JSON files → web app with search, viewer, form/JSON editor, live preview, validation, export, trash/restore, and a JSON API |
 
+**Not an unconditional merge.** Each engine keeps working on its own, and the
+combination adds things neither has alone:
+
+- **Independent** — korea100studio's CLI is untouched (`scripts/board.mjs`,
+  `korea100studio` bin). Archify is consumed as an unmodified package and can
+  live anywhere: the vendored copy, an Archify you already installed as a
+  Skill, or a checkout (`HANSOL_ARCHIFY_ROOT`). Without any Archify, Hansol-100
+  runs in **board-only mode** (CLI, library and service all keep working). See
+  [Engine independence](#engine-independence).
+- **Synergy** — one JSON-first CLI/API/library/service for both engines,
+  engine-neutral `render`/`validate`, and a **board ⇄ Archify workflow
+  converter** whose output validates on the target engine, so one authored
+  process yields both a print-quality government-style board and an
+  interactive, validated Archify diagram. See [Synergy](#synergy).
+
 Updates and fixes to the merged product happen here. Upstream Archify changes
 are pulled in with one command (see [Updating the Archify engine](#updating-the-archify-engine)).
 
@@ -48,6 +63,7 @@ validates, renders, audits and stores the result; the service shows it.
 | `validate <file.json> [--strict] [--json]` | Boards: schema + references + layout (+ budget gate with `--strict`); Archify: `validate --json` |
 | `audit <file.json> [--json]` | Composition metrics/score (boards) or the Archify receipt |
 | `detect <file.json> [--json]` | Which engine/kind a file is, with a summary |
+| `convert <file.json> --to board\|workflow [--out path] [--quality q] [--profile p] [--json]` | Board ⇄ Archify workflow; the result is validated with the target engine (exit 1 if it does not pass) |
 | `board <render\|audit\|validate\|motion\|check> …` | Verbatim korea100studio CLI (`scripts/board.mjs`) |
 | `archify <render\|validate\|deliver\|guide\|compare\|…> …` | Verbatim Archify CLI (`engines/archify/bin/archify.mjs`) |
 | `library list\|search\|add\|show\|remove\|export\|path` | Manage the service's content store (`library/`, `--library DIR`, `HANSOL_LIBRARY`) |
@@ -111,6 +127,39 @@ PNG in the browser without any of them.
 validation receipt; the CLI's engine-neutral `render`/`validate` use Archify's
 own `deliver --json` / `validate --json`.
 
+## Engine independence
+
+| Mode | How | What works |
+|---|---|---|
+| **Full** (default) | vendored `engines/archify/` | everything |
+| **External Archify** | `HANSOL_ARCHIFY_ROOT=/path/to/archify` (a clean package, or the `archify/` directory of a checkout); without the env var, an install at `~/.claude/skills/archify`, `~/.agents/skills/archify`, `~/.config/opencode/skills/archify` or a sibling `../archify/archify` is discovered when the vendored copy is absent | everything, against *that* Archify — no duplicate install |
+| **Board-only** | no Archify anywhere | boards, audit, motion, library, service, workflow → board conversion; Archify commands fail with one clear message, the UI shows “Board-only mode”, `doctor` reports the engine as optional |
+| **Archify-only** | use the Archify repository or `npx skills add tt-a1i/archify` as before | unchanged; nothing in Archify depends on Hansol-100 |
+
+`node bin/hansol.mjs doctor` prints which Archify is in use and where it came from.
+
+## Synergy
+
+- **One surface for two engines** — `render`/`validate`/`audit`/`detect`
+  pick the engine from the JSON; the library, search, service and editor treat
+  both kinds alike (with engine-specific viewers and validation).
+- **Board ⇄ Archify workflow conversion** — `hansol100 convert`, the
+  `/api/convert` endpoint, and the “→ Convert to Archify workflow / process
+  board” buttons in the viewer:
+  - lanes → lanes, stages → phases/columns (≤ 6), nodes → nodes with
+    `emphasis` mapped to Archify kinds and the legend relabelled in board terms
+    (or the `gov` profile's 선행/핵심/병목/회귀), `note`/`refs` → sublabel/tag,
+    edge types → roles (sequence/message/loop ↔ default/async/return);
+  - Archify's single-line text rules are honoured (node widths fitted,
+    over-long text shortened with the full text preserved in `cards`),
+    stacked nodes get `yOffset`s, long backward returns route above the lanes —
+    so a converted document passes Archify validation as-is (standard profile);
+  - the reverse direction maps columns back to stages via phases and roles back
+    to edge types, and passes the board audit;
+  - the converted document opens in the editor as a draft; the original is
+    untouched until you save. The viewer lists other renditions with the same
+    title, so the board and its interactive twin stay one click apart.
+
 ## Updating the Archify engine
 
 ```bash
@@ -143,7 +192,7 @@ tests/                    node:test suites (engine, CLI, library, server, option
 ## Tests
 
 ```bash
-npm test                                             # ~100 tests, no browser needed
+npm test                                             # ~110 tests, no browser needed (includes board-only and external-Archify modes)
 NODE_PATH=$(npm root -g) node --test tests/ui.browser.test.mjs   # optional: real-browser UI flow with a globally installed Playwright
 ```
 
