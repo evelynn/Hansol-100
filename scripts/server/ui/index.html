@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hansol-100 Studio</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/" aria-label="Hansol-100 Studio home">
+      <span class="brand-mark">H</span>
+      <span class="brand-name">Hansol-100 <em>Studio</em></span>
+    </a>
+    <nav class="topnav" aria-label="primary">
+      <a href="#/" data-route="library" data-i18n="nav.library">라이브러리</a>
+      <div class="menu" id="new-menu-root">
+        <button type="button" class="menu-button" id="new-menu-button" aria-haspopup="true" aria-expanded="false" data-i18n="nav.new">새로 만들기</button>
+        <div class="menu-list" id="new-menu" role="menu" hidden></div>
+      </div>
+      <a href="#/import" data-route="import" data-i18n="nav.import">가져오기</a>
+      <a href="#/trash" data-route="trash" data-i18n="nav.trash">휴지통</a>
+    </nav>
+    <div class="topbar-right">
+      <span id="engine-status" class="status-pill" title=""></span>
+      <button type="button" id="lang-toggle" class="ghost small" aria-label="language">EN</button>
+    </div>
+  </header>
+  <main id="app" class="app"></main>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <script type="module" src="/assets/app.js"></script>
+</body>
+</html>

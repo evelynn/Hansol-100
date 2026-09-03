@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 jobs:
   test:
@@ -12,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [20, 22, 24]
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -21,4 +20,5 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
+      - run: npm run doctor
       - run: npm test

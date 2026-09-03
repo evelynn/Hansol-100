@@ -1,106 +1,144 @@
 ---
-name: korea100studio
+name: hansol100
 description: >-
-  Turn any process — described in natural language, a table, or data — into a
-  vertical swimlane process board (SVG, optional PNG), audit its composition
-  quality, and render a stage-ordered reveal animation. Use when the user wants
-  to visualize a workflow, procedure, approval flow, or who-does-what-when across
-  actors and stages. Works in Claude Code and Codex.
+  All-in-one diagram studio. (1) Turn any process — actors × stages × steps,
+  described in natural language, a table, or data — into a vertical swimlane
+  process board (SVG, optional PNG, stage-reveal motion SVG) and audit its
+  composition quality. (2) Create validated Archify architecture, workflow,
+  sequence, data-flow and lifecycle diagrams as interactive standalone HTML.
+  (3) Keep every diagram in a searchable, editable, shareable web library
+  (`hansol100 serve`) so people can refine what the agent produced. Use when
+  the user wants to visualize a workflow, procedure, approval flow,
+  who-does-what-when, system architecture, API call sequence, data pipeline,
+  or state lifecycle — or wants to browse, search, edit, or share diagrams
+  already made. Works in Claude Code and Codex.
 ---
 
-# korea100studio
+# Hansol-100 Studio
 
-A vertical swimlane process-board renderer. Lanes (columns) are actors; stages
-(rows) are ordered phases, top to bottom. You author a small JSON file
-(`board-v1`), then drive everything through one CLI: `scripts/board.mjs`.
+One Skill, two engines, one service:
 
-## Workflow
+| Engine | Input | Output | Best for |
+|---|---|---|---|
+| **board** (korea100studio) | `board-v1` JSON: `lanes` × `stages` × `nodes` × `edges` | SVG (+PNG, motion SVG) | Business/administrative procedures, approval flows, who-does-what-when across actors and phases |
+| **archify** (vendored at `engines/archify/`) | Archify typed JSON (`diagram_type`) | Interactive standalone HTML | System architecture, technical workflows/runbooks, API sequences, data pipelines, state lifecycles |
+| **service** (`hansol100 serve`) | The `library/` folder of JSON files | Web app + JSON API | Browsing, searching, editing, exporting and sharing everything above |
 
-1. **Elicit the process.** From whatever the user gives you (a description, a
-   table, a policy document, raw notes), identify:
-   - **lanes** — the actors/roles/departments involved (columns, left→right)
-   - **stages** — the ordered phases the process moves through (rows, top→bottom)
-   - **nodes** — one card per actor-action within a stage (`lane` × `stage` × `label`)
-   - **edges** — how nodes connect: `sequence` (normal flow), `message`
-     (info/handoff between lanes), `loop` (rework/return path)
+All commands run from the skill root: `node bin/hansol.mjs <command>` (aliased
+as `hansol100` when installed with npm). Run `node bin/hansol.mjs doctor` once
+to confirm both engines are present.
 
-2. **Write a `board-v1` JSON file.** Start from `templates/board.template.json`
-   or `fixtures/generic-sample.json`. Full field reference:
-   `schemas/board-v1.schema.json`. Mapping guidance and a worked example:
-   `references/authoring.md`.
+## 1. Pick the engine
 
-3. **Render, audit, and iterate** with the CLI (see below) until `audit`
-   reports zero node-piercings and metrics are within budget.
+- Actors/roles/departments moving a case through ordered phases, Korean
+  administrative or legal procedures, anything the user calls a 순서도/업무
+  흐름/절차/swimlane → **board**.
+- Components, services, infrastructure, request/response sequences, ETL,
+  state machines, anything about code or systems → **archify**; choose the
+  type with the router in `engines/archify/SKILL.md`, or ask
+  `node bin/hansol.mjs archify guide "<scenario>" --json`.
+- The user wants to see, find, fix, or share existing diagrams → **service**
+  (§4). Anything the agent creates should also be added to the library (§4)
+  unless the user only wants a file.
 
-## CLI
+## 2. Process boards (board engine)
 
-All commands: `node scripts/board.mjs <command> <board.json> [options]`
+1. **Elicit the process.** Identify `lanes` (actors, left→right in handoff
+   order), `stages` (ordered phases, top→bottom), `nodes` (one card per
+   actor-action in a stage: `{id, lane, stage, label, emphasis?, note?, refs?}`)
+   and `edges` (`sequence` = normal flow, `message` = information handoff
+   between lanes, `loop` = rework/return path). Mapping guidance and a worked
+   example: `references/authoring.md`. Field reference:
+   `schemas/board-v1.schema.json`. Starters: `templates/board.template.json`,
+   `fixtures/generic-sample.json` (default profile), `fixtures/gov-sample.json`
+   (Korean `gov` profile with statute `refs`).
+2. **Write the JSON.** Use `"profile": "gov"` for Korean administrative/legal
+   procedures (badges 선행/핵심/병목/회귀, `refsLabel` 조문); omit it for the
+   neutral English `default` profile. Details: `references/profiles.md`.
+3. **Validate → render → audit, then iterate:**
+
+   ```bash
+   node bin/hansol.mjs validate board.json            # schema + references + layout (exit 1 on error)
+   node bin/hansol.mjs render board.json --out board.svg [--png]
+   node bin/hansol.mjs audit board.json               # composition metrics + score
+   node bin/hansol.mjs board motion board.json --out board.motion.svg
+   ```
+
+   `nodePiercings` must be 0 (an edge hidden behind an unrelated card). The
+   other metrics are soft budgets; repeated violations mean simplify the graph
+   (fewer cross-lane edges, shorter loops, reorder stages) rather than tolerate
+   the render. Thresholds and fixes: `references/composition-quality.md`.
+   `validate --strict` fails on any budget violation (use in CI).
+4. PNG is emitted when `rsvg-convert`, `cairosvg`, or a Chrome/Chromium binary
+   (`HANSOL_CHROME=/path/to/chrome`) is available; SVG is always produced. The
+   web UI can also export PNG from the browser without any of those.
+
+`node bin/hansol.mjs board <render|audit|validate|motion|check> …` passes
+through to the original korea100studio CLI (`scripts/board.mjs`) unchanged.
+
+## 3. Archify diagrams (archify engine)
+
+Read `engines/archify/SKILL.md` and follow its **fast authoring path** exactly
+(one schema + one example, artifact first, `validate` after every edit,
+`deliver` for acceptance). Every command there is available in two equivalent
+forms:
 
 ```bash
-# Render an SVG (default profile). --png also emits a rasterized PNG if
-# librsvg or cairosvg is installed; --profile picks a visual profile.
-node scripts/board.mjs render fixtures/generic-sample.json --out board.svg
-node scripts/board.mjs render fixtures/gov-sample.json --out board.svg --png --profile gov
-
-# Print composition-quality metrics and score (see references/composition-quality.md)
-node scripts/board.mjs audit fixtures/generic-sample.json
-
-# Validate schema + composition budgets. --strict exits non-zero on budget violations.
-node scripts/board.mjs validate fixtures/generic-sample.json --strict
-
-# Render a stage-ordered reveal animation (self-contained animated SVG)
-node scripts/board.mjs motion fixtures/generic-sample.json --out board.motion.svg
-
-# Sanity-check that a file is a well-formed SVG (useful after hand-editing one)
-node scripts/board.mjs check board.svg
+node bin/hansol.mjs archify validate workflow candidate.json --quality showcase --json
+node bin/hansol.mjs archify deliver workflow candidate.json out.html --quality showcase --json
+# or, exactly as upstream documents it:
+cd engines/archify && node bin/archify.mjs validate workflow ../../candidate.json --quality showcase --json
 ```
 
-If `--profile` is omitted, it falls back to the board's own `"profile"`
-field, then to `default`.
+Schemas live in `engines/archify/schemas/`, examples in
+`engines/archify/examples/`, references in `engines/archify/references/`.
+The engine-neutral shortcuts also work: `node bin/hansol.mjs validate
+diagram.json` and `node bin/hansol.mjs render diagram.json --out out.html`
+detect `diagram_type` and run Archify's `validate --json` / `deliver --json`.
+A non-zero exit is never success; report the diagnostics' `subject`,
+`evidence` and `supportedFixes` truthfully.
 
-## Validate–render loop
+## 4. Library and service (make it browsable, editable, shareable)
 
-Don't just render once and stop. After `render`, run `audit`:
+The library is a folder of JSON files (`library/` by default; override with
+`--library <dir>` or `HANSOL_LIBRARY`). Both engines' documents are detected
+automatically.
 
 ```bash
-node scripts/board.mjs audit board.json
+node bin/hansol.mjs library add board.json [--id my-process]   # validates, then stores as library/<id>.json
+node bin/hansol.mjs library list
+node bin/hansol.mjs library search "심판 재결"                 # title/lanes/stages/nodes/notes, all terms must match
+node bin/hansol.mjs library export <id> --out ./dist [--png]   # json + svg + motion svg (board) or html (archify)
+node bin/hansol.mjs serve --open                               # http://127.0.0.1:4100/
 ```
 
-- **`nodePiercings` must be 0.** This is the worst readability sin — an edge
-  routed behind an unrelated card, hidden by z-order. The renderer's gutter
-  router already keeps in-row and return edges out from behind cards for
-  typical boards; if piercings still show up, it usually means two nodes in
-  the same lane/stage are too close, or an edge spans many stages. Fix by
-  reordering stages, splitting a node, or rerouting via an intermediate node.
-- **`crossings`, `bendsPerEdgeMax`, `routeStretchMax`, `adjustedLabels`** are
-  soft-budgeted (see `references/composition-quality.md` for the exact
-  thresholds and what each means). A few crossings are normal in busy
-  processes; treat repeated budget violations as a signal to simplify the
-  graph (fewer cross-lane edges, shorter loops) rather than a hard blocker.
-- Use `validate --strict` in scripts/CI to fail the build on budget
-  violations; use plain `audit` interactively while iterating.
+The web app lets people browse and search the library, view boards (with
+motion playback) and Archify HTML, edit boards in a form (lanes, stages,
+nodes, edges, refs) or raw JSON with live preview and composition metrics,
+edit Archify JSON with live preview and the full validation receipt, save with
+conflict detection (another editor's save is never silently overwritten),
+duplicate, export (JSON/SVG/PNG/motion/HTML), and restore from trash. Add
+`--host 0.0.0.0` to share it on a network — there is no authentication, so
+treat it as a team-internal tool. The JSON API (`/api/…`, documented in
+`docs/service.md`) accepts the same documents, so an agent can push results
+into a running service with `curl` as well.
 
-## Profiles
+Typical end-to-end run: author JSON → validate/render/audit until clean →
+`library add` → tell the user the id, the rendered file path, and that
+`hansol100 serve --open` (or the already running service) shows it.
 
-- **`default`** — neutral, English labels, blue/slate palette. Use for
-  general-purpose workflows.
-- **`gov`** — korea100's Korean-government look: Korean badge labels (선행/핵심/후속/병목/회귀),
-  Korean chrome text (legend, axis labels, footer notes), `refsLabel: "조문"`
-  for citing statutes, and a violet accent. Use for Korean administrative/
-  legal procedures, especially when nodes carry `refs` citing law articles.
+## 5. Output
 
-Full emphasis→badge mapping, how `refs`/`refsLabel` render, and how to add a
-new profile: `references/profiles.md`.
+Report: engine and kind, the rendered file path(s), the validation/audit
+summary (board: score + `nodePiercings`; archify: artifact checks and
+composition status from the receipt), the library id when stored, and any
+unresolved diagnostics. Never claim a render or validation you did not run.
 
 ## Reference files
 
-- `references/authoring.md` — how to map a natural-language process onto
-  board-v1 fields, with a fully worked example.
-- `references/composition-quality.md` — what `audit`'s metrics mean and the
-  budget thresholds.
-- `references/profiles.md` — `default` vs `gov` profile details and how to
-  extend `scripts/lib/profiles.mjs` with a new one.
-- `schemas/board-v1.schema.json` — the authoritative JSON Schema.
-- `templates/board.template.json` — minimal starting skeleton.
-- `fixtures/generic-sample.json`, `fixtures/gov-sample.json` — full working
-  examples for each profile.
+- `references/authoring.md` — natural language → `board-v1` mapping with a worked example.
+- `references/composition-quality.md` — what `audit` measures and the budgets.
+- `references/profiles.md` — `default` vs `gov`, and how to add a profile.
+- `schemas/board-v1.schema.json`, `templates/board.template.json`, `fixtures/*.json`.
+- `engines/archify/SKILL.md` and `engines/archify/references/*.md` — the complete Archify contract.
+- `docs/service.md` — service usage and JSON API; `docs/architecture.md` — how the pieces fit.

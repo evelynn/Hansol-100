@@ -1,114 +1,154 @@
-# korea100studio
-
-[![npm version](https://img.shields.io/npm/v/korea100studio.svg)](https://www.npmjs.com/package/korea100studio)
-[![CI](https://github.com/hosungseo/korea100studio/actions/workflows/ci.yml/badge.svg)](https://github.com/hosungseo/korea100studio/actions/workflows/ci.yml)
-[![license](https://img.shields.io/npm/l/korea100studio.svg)](LICENSE)
+# Hansol-100 Studio
 
 📖 **English** · [한국어](README.ko.md)
 
-Turn any process — actors × stages × steps — into a **vertical swimlane board**
-(SVG, optional PNG), **audit its composition quality**, and render a
-**stage-ordered reveal animation**. korea100studio is a standalone Agent Skill
-extracted and generalized from
-[korea100](https://hosungseo.github.io/korea100)'s process renderer. It works
-inside **Claude Code** and **Codex** via a `SKILL.md` entry point plus a small
-zero-native-dependency ESM CLI (`scripts/board.mjs`).
+**Process boards + Archify diagrams — one Agent Skill, one web service.**
 
-## Examples
+Hansol-100 merges two diagram engines into a single product that works both as
+an **Agent Skill** (Claude Code / Codex author the JSON) and as a **service**
+(people browse, search, edit, export and share the results):
 
-Same engine, two profiles — a neutral software-release board (`default`) and a
-korea100-style government board (`gov`):
+| | Engine | Input → Output |
+|---|---|---|
+| 🧭 | **Process boards** — the [korea100studio](https://github.com/hosungseo/korea100studio) swimlane renderer | `board-v1` JSON (lanes × stages × nodes × edges) → SVG · PNG · stage-reveal motion SVG, with a composition-quality audit |
+| 🏗️ | **Archify** — vendored clean Skill package in [`engines/archify/`](engines/archify/) | Archify typed JSON (architecture · workflow · sequence · dataflow · lifecycle) → validated, interactive standalone HTML |
+| 🌐 | **Studio service** — `hansol100 serve` | The `library/` folder of JSON files → web app with search, viewer, form/JSON editor, live preview, validation, export, trash/restore, and a JSON API |
 
-| `default` profile | `gov` profile |
+Updates and fixes to the merged product happen here. Upstream Archify changes
+are pulled in with one command (see [Updating the Archify engine](#updating-the-archify-engine)).
+
+## Quick start
+
+```bash
+git clone https://github.com/evelynn/Hansol-100.git
+cd Hansol-100
+npm install                       # one dependency (ajv); everything else is plain Node ≥ 20
+node bin/hansol.mjs doctor        # both engines present?
+node bin/hansol.mjs serve --open  # http://127.0.0.1:4100/ with the sample library
+```
+
+Install as an Agent Skill so Claude Code / Codex pick up `SKILL.md`:
+
+```bash
+git clone https://github.com/evelynn/Hansol-100.git ~/.claude/skills/hansol100   # Claude Code
+git clone https://github.com/evelynn/Hansol-100.git ~/.agents/skills/hansol100   # Codex
+cd ~/.claude/skills/hansol100 && npm install && npm test
+```
+
+Then, in chat: *“Draw the permit approval process across applicant, clerk and
+officer as a process board and add it to the library”* or *“Use Archify to map
+this repository's runtime architecture.”* The Skill routes to the right engine,
+validates, renders, audits and stores the result; the service shows it.
+
+## Unified CLI (`node bin/hansol.mjs` / `hansol100`)
+
+| Command | What it does |
 |---|---|
-| ![default profile example](assets/example-default.png) | ![gov profile example](assets/example-gov.png) |
+| `render <file.json> [--out path] [--png] [--profile p] [--quality q] [--json]` | Detects the engine: boards → SVG (+PNG); Archify → atomic `deliver` to HTML with the receipt |
+| `validate <file.json> [--strict] [--json]` | Boards: schema + references + layout (+ budget gate with `--strict`); Archify: `validate --json` |
+| `audit <file.json> [--json]` | Composition metrics/score (boards) or the Archify receipt |
+| `detect <file.json> [--json]` | Which engine/kind a file is, with a summary |
+| `board <render\|audit\|validate\|motion\|check> …` | Verbatim korea100studio CLI (`scripts/board.mjs`) |
+| `archify <render\|validate\|deliver\|guide\|compare\|…> …` | Verbatim Archify CLI (`engines/archify/bin/archify.mjs`) |
+| `library list\|search\|add\|show\|remove\|export\|path` | Manage the service's content store (`library/`, `--library DIR`, `HANSOL_LIBRARY`) |
+| `serve [--port 4100] [--host 127.0.0.1] [--library DIR] [--open]` | Start the studio service |
+| `doctor` | Environment check (Node, engines, rasterizer, UI, library) |
 
-Boards also export a stage-ordered reveal animation (self-contained SMIL SVG) —
-see [`assets/example-motion.svg`](assets/example-motion.svg), generated with
-`node scripts/board.mjs motion fixtures/generic-sample.json`.
+`korea100studio …` remains available as a second bin for backwards compatibility.
 
-## Install
+## The service
 
-**As an Agent Skill** (Claude Code / Codex) — clone into your skills directory so
-the agent picks up `SKILL.md`:
+`hansol100 serve` is a zero-dependency Node HTTP server (loopback by default;
+`--host 0.0.0.0` to share on a LAN — there is no authentication).
 
-```bash
-# Claude Code
-git clone https://github.com/hosungseo/korea100studio.git ~/.claude/skills/korea100studio
-# Codex
-git clone https://github.com/hosungseo/korea100studio.git ~/.agents/skills/korea100studio
+- **Library** — cards with live SVG thumbnails, kind filters, sort, and search
+  across titles, subtitles, lanes, stages, node labels, notes/refs and edge
+  labels. Korean substrings match (e.g. `심판 재결`); several terms must all match.
+- **Viewer** — boards with fit/zoom controls and stage-reveal motion playback;
+  Archify diagrams in their own interactive viewer (theme, search, routes,
+  stories, export) inside the page. Side panel with info, lanes/stages,
+  composition metrics (boards) or the full 9-check validation receipt (Archify).
+- **Editor** — boards: a form for basics, lanes, stages, nodes and edges
+  (renames propagate, deletions cascade) *and* a JSON tab, both with live
+  preview and composition chips; Archify: JSON with live preview and
+  on-demand showcase validation. Save (`Ctrl/⌘+S`) uses optimistic
+  concurrency: a stale save is refused, and you choose to overwrite or reload.
+  Invalid drafts can be saved on purpose.
+- **Create / import / export / trash** — templates for both engines,
+  paste-or-upload import, JSON/SVG/PNG (rendered in the browser)/motion
+  SVG/HTML export, soft delete with restore.
+- **JSON API** — `/api/diagrams`, `/api/preview`, `/api/validate`, render
+  endpoints and more, documented in [`docs/service.md`](docs/service.md), so
+  agents and scripts can push results into a running studio.
 
-cd ~/.claude/skills/korea100studio   # or wherever you cloned it
-npm install && npm test
-```
+## Engines
 
-**As a CLI** (any project) — via npm:
-
-```bash
-npm install -g korea100studio
-korea100studio render board.json --out board.svg
-
-# or without installing:
-npx korea100studio render board.json --out board.svg
-```
-
-## Quickstart
-
-```bash
-# Render a board to SVG (and PNG if rsvg-convert or cairosvg is installed)
-node scripts/board.mjs render fixtures/generic-sample.json --out board.svg --png
-
-# Audit composition quality (crossings, node-piercings, bends, route stretch)
-node scripts/board.mjs audit fixtures/generic-sample.json
-
-# Gate on quality budget (exit 1 under --strict if over budget)
-node scripts/board.mjs validate fixtures/generic-sample.json --strict
-
-# Stage-ordered reveal animation (self-contained animated SVG)
-node scripts/board.mjs motion fixtures/generic-sample.json --out board.motion.svg
-```
-
-## CLI
-
-| Command | Purpose |
-|---|---|
-| `render <board.json> [--out f.svg] [--png] [--profile p]` | Render board to SVG; PNG if a rasterizer is present |
-| `audit <board.json> [--json] [--profile p]` | Print composition score + metrics (`--json` for machine-readable output) |
-| `validate <board.json> [--strict] [--profile p]` | Schema + composition gate (exit 1 on strict breach) |
-| `motion <board.json> [--out f.svg] [--profile p]` | Animated stage-reveal SVG |
-| `check <file.svg>` | Structural SVG sanity check |
-
-## Input
+### Process boards (`board`)
 
 Boards conform to [`schemas/board-v1.schema.json`](schemas/board-v1.schema.json):
 `lanes` (actors) × `stages` (phases) × `nodes` (`{id, lane, stage, label,
-emphasis, refs}`) × `edges` (`{id, source, target, type}`). See
-[`references/authoring.md`](references/authoring.md) for how an agent turns a
-natural-language process into a board, and
-[`templates/board.template.json`](templates/board.template.json) for a starter.
-
-## Profiles
-
-- **`default`** — neutral, English labels; for any domain.
-- **`gov`** — the korea100 Korean-government look (선행/핵심/병목/회귀 badges).
-
-Select with `--profile` or a `"profile"` field on the board. See
+emphasis, note, refs}`) × `edges` (`{id, source, target, type, label}`). Two
+profiles: `default` (neutral English) and `gov` (korea100's Korean-government
+look with 선행/핵심/병목/회귀 badges and 조문 references). `audit` scores the real
+routed geometry — `nodePiercings` must be 0; crossings, bends, route stretch
+and adjusted labels are soft budgets. See
+[`references/authoring.md`](references/authoring.md),
+[`references/composition-quality.md`](references/composition-quality.md),
 [`references/profiles.md`](references/profiles.md).
 
-## Output & dependencies
+PNG output uses `rsvg-convert`, `cairosvg`, or any Chrome/Chromium
+(`HANSOL_CHROME=/path/to/chrome`); SVG never needs anything. The web UI exports
+PNG in the browser without any of them.
 
-Pure Node.js (≥20), one dependency (`ajv`) for schema validation. **SVG is
-always produced.** PNG is optional — emitted only when `rsvg-convert` (librsvg)
-or `cairosvg` is on `PATH`. Motion output is a self-contained animated SVG (SMIL,
-no JS, no external assets).
+### Archify (`archify`)
 
-## Composition quality
+`engines/archify/` is the clean Archify Skill package (the exact file set
+`archify.zip` ships: no tests, no lockfile, no dev tooling) plus
+`VENDOR.json` recording the upstream commit. Everything Archify documents in
+[`engines/archify/SKILL.md`](engines/archify/SKILL.md) works unchanged —
+`validate`, `deliver`, `preview`, `compare`, `visual-check`, `guide`,
+`brands`, `migrate`. The service renders Archify HTML on demand and shows the
+validation receipt; the CLI's engine-neutral `render`/`validate` use Archify's
+own `deliver --json` / `validate --json`.
 
-The `audit`/`validate` commands score each board's routed geometry. The key
-metric is **node-piercings** — an edge routed behind an unrelated card, hidden by
-z-order. The renderer's gutter routing keeps in-row and return edges out from
-behind cards. See [`references/composition-quality.md`](references/composition-quality.md).
+## Updating the Archify engine
 
-## License
+```bash
+node scripts/sync-archify.mjs --from ../archify           # stage the clean package from a checkout, update engines/archify, write VENDOR.json
+node scripts/sync-archify.mjs --from ../archify --check   # exit 1 if engines/archify drifted from that checkout
+npm test                                                  # engine smoke tests: doctor, per-type validation, render + check, SKILL path integrity
+```
 
-MIT © 2026 Hosung Seo
+The sync uses Archify's own `scripts/stage-clean-skill.mjs`, so the vendored
+tree is byte-identical to Archify's distribution. See
+[`docs/sync-archify.md`](docs/sync-archify.md).
+
+## Repository layout
+
+```
+SKILL.md                  unified Skill entry point (routes to both engines + the service)
+bin/hansol.mjs            unified CLI
+scripts/board.mjs         korea100studio CLI (unchanged)
+scripts/lib/              board engine (layout, render, composition, motion, profiles) + shared libs
+                          (detect, archify-engine, library/search, rasterize)
+scripts/server/           the service: server.mjs (HTTP + API) and ui/ (vanilla JS web app)
+scripts/sync-archify.mjs  Archify vendoring script
+engines/archify/          vendored Archify Skill package + VENDOR.json
+library/                  the service's content store (sample boards + Archify diagrams)
+schemas/ templates/ references/ fixtures/   board-v1 contract, starters and docs
+docs/                     architecture, service/API, sync procedure, original design notes
+tests/                    node:test suites (engine, CLI, library, server, optional browser)
+```
+
+## Tests
+
+```bash
+npm test                                             # ~100 tests, no browser needed
+NODE_PATH=$(npm root -g) node --test tests/ui.browser.test.mjs   # optional: real-browser UI flow with a globally installed Playwright
+```
+
+## Credits and licenses
+
+- Process-board engine: [korea100studio](https://github.com/hosungseo/korea100studio) by Hosung Seo (MIT), the base of this repository — see [`LICENSE`](LICENSE).
+- Archify: [tt-a1i/archify](https://github.com/tt-a1i/archify) (MIT; based on Cocoon AI's architecture-diagram-generator) — vendored with its own `LICENSE` and `THIRD_PARTY_NOTICES.md` under `engines/archify/`.
+- See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
