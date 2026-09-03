@@ -108,11 +108,17 @@ When the user wants the same process as a print/government-style board *and*
 as an interactive Archify diagram, author it once and convert:
 
 ```bash
-node bin/hansol.mjs convert board.json --to workflow [--out board.workflow.json] [--quality standard|showcase]
+node bin/hansol.mjs convert board.json --to workflow [--out board.workflow.json] [--orientation auto|columns|rows] [--quality standard|showcase]
 node bin/hansol.mjs convert diagram.workflow.json --to board [--profile gov]
 ```
 
-The converter keeps lanes, stages (≤ 6 → columns), nodes, emphasis (legend
+Boards with up to 10 stages convert. With ≤ 6 stages the stages become
+Archify columns (classic left-to-right); with 7–10 stages the layout is
+transposed automatically — stages become Archify lanes (rows) and actors
+become columns, reading like the vertical board; more than 6 actors are
+grouped into 6 columns with the actor named on each node. `--orientation
+rows` forces the transposed layout (often cleaner for dense Korean boards).
+The converter keeps lanes, stages, nodes, emphasis (legend
 relabelled in board terms), notes/refs (sublabel/tag) and edge types
 (sequence/message/loop ↔ default/async/return), fits Archify's single-line
 text rules (over-long text is shortened and preserved in `cards`), stacks
@@ -120,8 +126,10 @@ same-cell nodes, and routes long returns above the lanes; the result is
 validated with the target engine and the command exits 1 if it does not pass
 (the file is still written so you can repair it). Review the converted file
 like any authored document: `validate`, then `render`/`deliver`, then
-`library add`. A board with more than 6 stages must be merged first — say so
-rather than dropping stages. Boards with many crossings pass the `standard`
+`library add`. A board with more than 10 stages must be merged first — say so
+rather than dropping stages. A visible "Hansol-100 · conversion" card in the
+workflow records orientation, profile and stage/actor order so the reverse
+conversion is lossless; keep it. Boards with many crossings pass the `standard`
 Archify profile with warnings; `showcase` may report crossings that need
 manual `via`/routing work.
 

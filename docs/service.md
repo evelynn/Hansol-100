@@ -56,7 +56,7 @@ All responses are JSON unless noted. Errors look like
 | `GET /api/diagrams/:id/audit[?profile=][&quality=]` | Board composition metrics or the Archify `validate --json` receipt |
 | `POST /api/preview` `{source, profile?, quality?}` | Render an unsaved document: boards → `{ok, svg, audit, errors}`; Archify → `{ok, previewUrl}` (open within 15 min) or `{ok:false, diagnostics}` |
 | `POST /api/validate` `{source, thorough?, quality?}` | Engine-neutral validation; Archify runs the full receipt unless `thorough:false` |
-| `POST /api/convert` `{source, to: "board"\|"workflow", quality?, profile?}` | Board ⇄ Archify workflow; returns `{ok, from, to, source, validation}` where `source` is the converted document validated with the target engine (422 `convert/*` for unsupported or over-wide inputs) |
+| `POST /api/convert` `{source, to: "board"\|"workflow", orientation?: "auto"\|"columns"\|"rows", quality?, profile?}` | Board ⇄ Archify workflow; returns `{ok, from, to, source, validation}` where `source` is the converted document validated with the target engine (422 `convert/*` for unsupported or over-wide inputs) |
 | `GET /api/templates`, `GET /api/templates/:name` | Starters for both engines |
 | `GET /api/trash`, `POST /api/trash/:file/restore` | Trash listing and restore |
 

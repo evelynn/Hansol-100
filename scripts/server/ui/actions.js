@@ -10,7 +10,8 @@ export async function convertItem(item, to) {
     const result = await Convert.run(item.source, to);
     drafts.pending = result.source;
     const errors = result.validation?.errors?.length || 0;
-    toast(errors ? t("toast.convertedInvalid", { n: errors }) : t("toast.converted"), errors ? "error" : "success", 5000);
+    const suffix = result.orientation === "rows" ? ` · ${t("convert.rows")}` : "";
+    toast((errors ? t("toast.convertedInvalid", { n: errors }) : t("toast.converted")) + suffix, errors ? "error" : "success", 6000);
     location.hash = "#/new/draft";
   } catch (err) {
     toastError(err);

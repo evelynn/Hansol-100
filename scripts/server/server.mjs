@@ -21,7 +21,7 @@ import { renderBoardSvg } from "../lib/render-svg.mjs";
 import { computeComposition } from "../lib/composition.mjs";
 import { buildMotionSvg } from "../lib/motion.mjs";
 import { rasterize, describeRasterizer } from "../lib/rasterize.mjs";
-import { convertDocument, conversionTargets, ConvertError } from "../lib/convert.mjs";
+import { convertDocument, conversionTargets, resolveOrientation, ConvertError } from "../lib/convert.mjs";
 import {
   ARCHIFY_TEMPLATE_FILES,
   archifyInfo,
@@ -467,13 +467,14 @@ export function createApp({
       if (!to) throw new HttpError(400, "missing-target", `body.to is required (targets: ${conversionTargets(source).join(", ") || "none"})`);
       let result;
       try {
-        result = convertDocument(source, to, { quality: body.quality, profile: body.profile });
+        result = convertDocument(source, to, { quality: body.quality, profile: body.profile, orientation: body.orientation || query.get("orientation") || "auto" });
       } catch (err) {
         if (err instanceof ConvertError) throw new HttpError(422, `convert/${err.code}`, err.message, err.details);
         throw err;
       }
       const validation = validateDocument(result.document, { thorough: body.thorough !== false, quality: body.quality });
-      return { ok: validation.ok, from: result.from, to, source: result.document, validation: { ok: validation.ok, errors: validation.errors, ...(validation.receipt ? { receipt: validation.receipt } : {}), ...(validation.audit ? { audit: validation.audit } : {}) } };
+      const orientation = to === "workflow" ? resolveOrientation(source, body.orientation || query.get("orientation") || "auto") : undefined;
+      return { ok: validation.ok, from: result.from, to, ...(orientation ? { orientation } : {}), source: result.document, validation: { ok: validation.ok, errors: validation.errors, ...(validation.receipt ? { receipt: validation.receipt } : {}), ...(validation.audit ? { audit: validation.audit } : {}) } };
     },
 
     async trash() {

@@ -22,7 +22,7 @@ import { archifyInfo, archifyCli, deliverArchify, validateArchify, runArchify } 
 import { renderBoardSvg } from "../scripts/lib/render-svg.mjs";
 import { buildMotionSvg } from "../scripts/lib/motion.mjs";
 import { rasterize, describeRasterizer } from "../scripts/lib/rasterize.mjs";
-import { convertDocument, conversionTargets, ConvertError } from "../scripts/lib/convert.mjs";
+import { convertDocument, conversionTargets, resolveOrientation, ConvertError, MAX_STAGES } from "../scripts/lib/convert.mjs";
 import { VALIDATOR } from "../scripts/lib/validate.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -38,8 +38,9 @@ Any diagram (engine detected from the JSON):
   validate <file.json> [--strict] [--json] [--quality q]
   audit <file.json> [--json]
   detect <file.json> [--json]
-  convert <file.json> --to board|workflow [--out path] [--quality q] [--profile p] [--json]
-                                                    board ⇄ Archify workflow (validated with the target engine)
+  convert <file.json> --to board|workflow [--out path] [--orientation auto|columns|rows] [--quality q] [--profile p] [--json]
+                                                    board ⇄ Archify workflow, validated with the target engine.
+                                                    Boards up to 10 stages: ≤6 stages → stages as columns; 7–10 → stages as rows (auto)
 
 Engines (verbatim pass-through):
   board <render|audit|validate|motion|check> …      korea100studio board CLI (scripts/board.mjs)
@@ -267,20 +268,22 @@ async function cmdConvert(argv) {
   if (!to) fail(`--to is required (targets for this file: ${conversionTargets(doc).join(", ") || "none"})`, 2);
   let result;
   try {
-    result = convertDocument(doc, to, { quality: flags.quality, profile: flags.profile });
+    result = convertDocument(doc, to, { quality: flags.quality, profile: flags.profile, orientation: flags.orientation || "auto" });
   } catch (err) {
     if (err instanceof ConvertError) fail(`${err.message}`, 1);
     throw err;
   }
+  const orientation = result.to === "workflow" ? resolveOrientation(doc, flags.orientation || "auto") : undefined;
   const out = flags.out || `${stem(file)}.${to}.json`;
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
   fs.writeFileSync(out, `${JSON.stringify(result.document, null, 2)}\n`);
   const { validateDocument } = await import("../scripts/server/server.mjs");
   const validation = validateDocument(result.document, { thorough: true, quality: flags.quality });
   if (flags.json) {
-    console.log(JSON.stringify({ ok: validation.ok, from: result.from, to, output: path.resolve(out), validation }, null, 2));
+    console.log(JSON.stringify({ ok: validation.ok, from: result.from, to, ...(orientation ? { orientation } : {}), output: path.resolve(out), validation }, null, 2));
   } else {
     console.log(out);
+    if (orientation) console.log(`orientation: ${orientation} (${orientation === "rows" ? "stages as Archify lanes, actors as columns" : "stages as columns, actors as lanes"})`);
     if (validation.ok) {
       const summary = validation.receipt?.composition
         ? ` (composition ${validation.receipt.composition.profile}: ${validation.receipt.composition.summary.errors} errors, ${validation.receipt.composition.summary.warnings} warnings)`

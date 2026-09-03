@@ -36,7 +36,7 @@ const DICT = {
     "new.boards": "프로세스 보드", "new.archify": "Archify 다이어그램",
     "engine.ok": "엔진 준비됨 · Archify {v}", "engine.noArchify": "Archify 엔진 없음", "engine.boardOnly": "보드 전용 모드 (Archify 없음)",
     "action.convertTo.workflow": "→ Archify 워크플로로 변환", "action.convertTo.board": "→ 프로세스 보드로 변환", "convert.hint": "같은 프로세스를 다른 엔진 문서로 만들어 편집기에서 엽니다 (저장 전까지 원본은 그대로)",
-    "toast.converted": "변환 완료 — 편집기에서 검토 후 저장하세요", "toast.convertedInvalid": "변환 완료, 검증 오류 {n}건 — 편집기에서 확인하세요", "side.renditions": "다른 형식 (같은 제목)",
+    "toast.converted": "변환 완료 — 편집기에서 검토 후 저장하세요", "toast.convertedInvalid": "변환 완료, 검증 오류 {n}건 — 편집기에서 확인하세요", "side.renditions": "다른 형식 (같은 제목)", "convert.rows": "7단계 이상이라 단계를 행(레인)으로, 행위자를 열로 배치했습니다",
     "misc.loading": "불러오는 중…", "misc.notFound": "다이어그램을 찾을 수 없습니다: {id}", "misc.updated": "{when} 수정", "misc.searchHelp": "검색어를 띄어쓰기로 나누면 모두 포함된 항목만 찾습니다 (예: 심판 재결)",
   },
   en: {
@@ -75,7 +75,7 @@ const DICT = {
     "new.boards": "Process boards", "new.archify": "Archify diagrams",
     "engine.ok": "Engines ready · Archify {v}", "engine.noArchify": "Archify engine missing", "engine.boardOnly": "Board-only mode (no Archify)",
     "action.convertTo.workflow": "→ Convert to Archify workflow", "action.convertTo.board": "→ Convert to process board", "convert.hint": "Creates the same process as a document of the other engine and opens it in the editor (the original stays untouched until you save)",
-    "toast.converted": "Converted — review in the editor, then save", "toast.convertedInvalid": "Converted with {n} validation errors — review in the editor", "side.renditions": "Other renditions (same title)",
+    "toast.converted": "Converted — review in the editor, then save", "toast.convertedInvalid": "Converted with {n} validation errors — review in the editor", "side.renditions": "Other renditions (same title)", "convert.rows": "7+ stages: stages became rows (lanes) and actors became columns",
     "misc.loading": "Loading…", "misc.notFound": "Diagram not found: {id}", "misc.updated": "updated {when}", "misc.searchHelp": "Separate terms with spaces to require all of them (e.g. cache redis)",
   },
 };

@@ -63,7 +63,7 @@ validates, renders, audits and stores the result; the service shows it.
 | `validate <file.json> [--strict] [--json]` | Boards: schema + references + layout (+ budget gate with `--strict`); Archify: `validate --json` |
 | `audit <file.json> [--json]` | Composition metrics/score (boards) or the Archify receipt |
 | `detect <file.json> [--json]` | Which engine/kind a file is, with a summary |
-| `convert <file.json> --to board\|workflow [--out path] [--quality q] [--profile p] [--json]` | Board ⇄ Archify workflow; the result is validated with the target engine (exit 1 if it does not pass) |
+| `convert <file.json> --to board\|workflow [--out path] [--orientation auto\|columns\|rows] [--quality q] [--profile p] [--json]` | Board ⇄ Archify workflow; boards up to **10 stages** (≤ 6 stages → stages as columns, 7–10 → stages as rows); the result is validated with the target engine (exit 1 if it does not pass) |
 | `board <render\|audit\|validate\|motion\|check> …` | Verbatim korea100studio CLI (`scripts/board.mjs`) |
 | `archify <render\|validate\|deliver\|guide\|compare\|…> …` | Verbatim Archify CLI (`engines/archify/bin/archify.mjs`) |
 | `library list\|search\|add\|show\|remove\|export\|path` | Manage the service's content store (`library/`, `--library DIR`, `HANSOL_LIBRARY`) |
@@ -146,7 +146,14 @@ own `deliver --json` / `validate --json`.
 - **Board ⇄ Archify workflow conversion** — `hansol100 convert`, the
   `/api/convert` endpoint, and the “→ Convert to Archify workflow / process
   board” buttons in the viewer:
-  - lanes → lanes, stages → phases/columns (≤ 6), nodes → nodes with
+  - boards up to **10 stages**: with ≤ 6 stages the stages become Archify
+    columns and actors become lanes (classic left-to-right workflow); with
+    7–10 stages the conversion is transposed — stages become Archify lanes
+    (rows, unbounded) and actors become columns — which reads exactly like the
+    vertical board; more than 6 actors are grouped into 6 columns with the
+    actor named on each node; `--orientation rows` forces the transposed
+    layout for any board (often cleaner for dense Korean boards);
+  - lanes → lanes, stages → phases/columns, nodes → nodes with
     `emphasis` mapped to Archify kinds and the legend relabelled in board terms
     (or the `gov` profile's 선행/핵심/병목/회귀), `note`/`refs` → sublabel/tag,
     edge types → roles (sequence/message/loop ↔ default/async/return);
@@ -154,8 +161,10 @@ own `deliver --json` / `validate --json`.
     over-long text shortened with the full text preserved in `cards`),
     stacked nodes get `yOffset`s, long backward returns route above the lanes —
     so a converted document passes Archify validation as-is (standard profile);
-  - the reverse direction maps columns back to stages via phases and roles back
-    to edge types, and passes the board audit;
+  - the reverse direction is lossless for converted documents (a visible
+    "Hansol-100 · conversion" card records orientation, profile, stage and
+    actor order; shortened text is restored from the cards) and maps any
+    hand-written Archify workflow to a board via phases, kinds and roles;
   - the converted document opens in the editor as a draft; the original is
     untouched until you save. The viewer lists other renditions with the same
     title, so the board and its interactive twin stay one click apart.

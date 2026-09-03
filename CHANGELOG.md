@@ -3,6 +3,21 @@
 All notable changes to Hansol-100 are documented here. Versions follow
 [semver](https://semver.org/). Entries before 1.0.0 are korea100studio's.
 
+## [1.2.0] - 2026-09-03
+
+### Added
+- Boards with **7–10 stages** now convert to Archify workflows: the converter
+  transposes the layout (stages → Archify lanes, actors → columns), lifting the
+  6-column ceiling to 10 stages; more than 6 actors are grouped into 6 columns
+  with the actor named on each node. `--orientation auto|columns|rows` (CLI),
+  `orientation` (API) force a layout; `auto` keeps the classic columns layout
+  for ≤ 6 stages.
+- A visible "Hansol-100 · conversion" card records orientation, profile and
+  stage/actor order, making the reverse conversion lossless (verified for the
+  10-stage fixture, the gov sample in both orientations, and grouped actors).
+- `fixtures/long-sample.json` (10-stage 건축 인허가 board) and the matching
+  library sample.
+
 ## [1.1.0] - 2026-09-03
 
 Independence and synergy: the merge is no longer "two engines side by side".

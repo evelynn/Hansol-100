@@ -61,7 +61,7 @@ cd ~/.claude/skills/hansol100 && npm install && npm test
 | `validate <file.json> [--strict] [--json]` | 보드: 스키마 + 참조 + 레이아웃(`--strict`면 예산 위반도 실패); Archify: `validate --json` |
 | `audit <file.json> [--json]` | 구성 지표·점수(보드) 또는 Archify 영수증 |
 | `detect <file.json> [--json]` | 파일이 어느 엔진/종류인지와 요약 |
-| `convert <file.json> --to board\|workflow [--out path] [--quality q] [--profile p] [--json]` | 보드 ⇄ Archify 워크플로 변환; 결과를 대상 엔진으로 검증(통과 못 하면 exit 1) |
+| `convert <file.json> --to board\|workflow [--out path] [--orientation auto\|columns\|rows] [--quality q] [--profile p] [--json]` | 보드 ⇄ Archify 워크플로 변환; **최대 10단계**(≤6단계는 단계를 열로, 7–10단계는 단계를 행으로); 결과를 대상 엔진으로 검증(통과 못 하면 exit 1) |
 | `board <render\|audit\|validate\|motion\|check> …` | korea100studio CLI(`scripts/board.mjs`) 그대로 전달 |
 | `archify <render\|validate\|deliver\|guide\|compare\|…> …` | Archify CLI(`engines/archify/bin/archify.mjs`) 그대로 전달 |
 | `library list\|search\|add\|show\|remove\|export\|path` | 서비스 콘텐츠 저장소 관리(`library/`, `--library DIR`, `HANSOL_LIBRARY`) |
@@ -139,15 +139,21 @@ Archify HTML을 요청 시 렌더하고 검증 영수증을 보여주며, CLI의
   (뷰어·검증은 엔진별).
 - **보드 ⇄ Archify 워크플로 변환** — `hansol100 convert`, `/api/convert`,
   뷰어의 “→ Archify 워크플로로 변환 / → 프로세스 보드로 변환” 버튼:
-  - 레인 → 레인, 단계 → 페이즈/컬럼(≤ 6), 노드 → 노드(`emphasis`를 Archify
+  - **최대 10단계** 보드 지원: 6단계 이하는 단계가 Archify 컬럼, 행위자가 레인이
+    되고(고전적 좌→우 워크플로), 7–10단계는 전치되어 단계가 Archify 레인(행, 개수
+    제한 없음), 행위자가 컬럼이 됩니다 — 세로형 보드와 같은 읽기 방향. 행위자가
+    7명 이상이면 6개 열로 묶고 노드마다 행위자 이름을 표기. `--orientation rows`로
+    어떤 보드든 전치 배치를 강제할 수 있습니다(빽빽한 한국어 보드에 더 깔끔한 경우가 많음);
+  - 레인 → 레인, 단계 → 페이즈/컬럼, 노드 → 노드(`emphasis`를 Archify
     종류로 매핑하고 범례를 보드 용어 또는 `gov` 프로필의 선행/핵심/병목/회귀로
     재표기), `note`/`refs` → sublabel/tag, 연결 유형 → 역할
     (sequence/message/loop ↔ default/async/return);
   - Archify의 한 줄 텍스트 규칙을 지킵니다(노드 폭 맞춤, 너무 긴 텍스트는 줄이고
     전체 텍스트를 `cards`에 보존), 같은 칸의 노드는 `yOffset`으로 쌓고, 긴 회귀
     연결은 레인 위로 라우팅 — 변환 결과가 그대로 Archify 검증(standard)을 통과;
-  - 역방향은 페이즈로 컬럼을 단계에 되돌리고 역할을 연결 유형으로 되돌리며,
-    보드 감사를 통과합니다;
+  - 변환된 문서의 역방향은 무손실입니다(눈에 보이는 “Hansol-100 · conversion”
+    카드에 방향·프로필·단계/행위자 순서를 기록하고, 축약된 텍스트는 카드에서
+    복원). 손으로 만든 Archify 워크플로도 페이즈·종류·역할로 보드가 됩니다;
   - 변환 결과는 편집기에 초안으로 열리고 원본은 저장 전까지 그대로입니다. 뷰어는
     같은 제목의 다른 형식을 나열해 보드와 인터랙티브 쌍둥이를 한 번에 오갑니다.
 
