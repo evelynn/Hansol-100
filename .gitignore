@@ -3,3 +3,7 @@ node_modules/
 *.out.png
 fixtures/*.out.*
 .omc/
+library/.trash/
+library/.cache/
+library/.*.tmp
+*.out.html
